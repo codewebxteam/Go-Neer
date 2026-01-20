@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
 import { MapPin, Search, ArrowRight, Loader2, Droplets, Truck, ShieldCheck, Clock, Phone } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { MOCK_VENDORS } from '../../data/mockData'
+import { getDocuments, addDocument } from '../../services/firestoreService'
 import VendorCard from '../../components/user/VendorCard'
 import VendorMap from '../../components/user/VendorMap'
 import { motion } from 'framer-motion'
+import { MOCK_VENDORS } from '../../data/mockData'
 
 export default function Home() {
     const [vendors, setVendors] = useState([])
@@ -14,12 +15,40 @@ export default function Home() {
     const [userLocation, setUserLocation] = useState(null)
 
     useEffect(() => {
-        // Simulate fetch delay to show off loading state or just transition
-        setTimeout(() => {
-            setVendors(MOCK_VENDORS)
-            setFilteredVendors(MOCK_VENDORS)
-            setLoading(false)
-        }, 800)
+        // Set vendors to mock data immediately, then try to fetch from Firestore
+        const fetchVendors = async () => {
+            try {
+                setLoading(true)
+                
+                // Use mock data immediately while fetching
+                setVendors(MOCK_VENDORS)
+                setFilteredVendors(MOCK_VENDORS)
+                console.log('Using mock vendors:', MOCK_VENDORS.length)
+                
+                // Try to fetch from Firestore in background
+                try {
+                    const vendorsData = await getDocuments('vendors')
+                    console.log('Vendors fetched from Firestore:', vendorsData?.length || 0)
+                    
+                    if (vendorsData && vendorsData.length > 0) {
+                        setVendors(vendorsData)
+                        setFilteredVendors(vendorsData)
+                        console.log('Updated to Firestore data')
+                    }
+                } catch (firestoreError) {
+                    console.warn('Firestore read failed, using mock data:', firestoreError.message)
+                }
+            } catch (error) {
+                console.error('Error in fetchVendors:', error)
+                // Fallback to mock data
+                setVendors(MOCK_VENDORS)
+                setFilteredVendors(MOCK_VENDORS)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchVendors()
     }, [])
 
     // Get user's current location
@@ -63,23 +92,33 @@ export default function Home() {
         setFilteredVendors(nearby)
     }
 
-    // Handle search by city name or vendor name
+    // Handle search by location (city/area)
     const handleSearchChange = (e) => {
-        const value = e.target.value.toLowerCase()
+        const value = e.target.value.toLowerCase().trim()
         setSearchLocation(value)
         
         if (!value) {
             setFilteredVendors(vendors)
+            console.log('Search cleared, showing all vendors:', vendors.length)
             return
         }
 
-        // Filter by exact city name match first, then by vendor name or address
-        const filtered = vendors.filter(vendor =>
-            vendor.city.toLowerCase() === value ||
-            vendor.shop_name.toLowerCase().includes(value) ||
-            vendor.address.toLowerCase().includes(value)
-        )
+        // Filter ONLY by city or area - location-based search
+        const filtered = vendors.filter(vendor => {
+            const city = vendor.city?.toLowerCase() || ''
+            const area = vendor.area?.toLowerCase() || ''
+            
+            // Match if the search term is found in city or area name
+            const matches = city.includes(value) || area.includes(value)
+            
+            if (matches) {
+                console.log('Match found:', vendor.shop_name, 'in', vendor.city)
+            }
+            
+            return matches
+        })
         
+        console.log('Searching for location "' + value + '" found:', filtered.length, 'vendors')
         setFilteredVendors(filtered)
     }
 
@@ -213,10 +252,15 @@ export default function Home() {
             {/* Vendors Section */}
             <section id="vendors-grid" className="py-20 bg-slate-100/50">
                 <div className="container mx-auto px-4">
-                    {searchLocation && (
+                    {searchLocation ? (
                         <div className="mb-12">
                             <h2 className="text-3xl font-bold text-slate-900 mb-2">Vendors in "{searchLocation}"</h2>
                             <p className="text-slate-500">Found {filteredVendors.length} vendors</p>
+                        </div>
+                    ) : (
+                        <div className="mb-12">
+                            <h2 className="text-3xl font-bold text-slate-900 mb-2">All Available Vendors</h2>
+                            <p className="text-slate-500">{filteredVendors.length} vendors ready to serve you</p>
                         </div>
                     )}
 
@@ -224,7 +268,7 @@ export default function Home() {
                         <div className="flex justify-center py-20">
                             <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
                         </div>
-                    ) : searchLocation && filteredVendors.length > 0 ? (
+                    ) : filteredVendors.length > 0 ? (
                         <>
                             {/* Image Gallery Section */}
                             <div className="mb-16">
@@ -303,17 +347,11 @@ export default function Home() {
                                 </div>
                             </div>
                         </>
-                    ) : !searchLocation ? (
-                        <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
-                            <MapPin className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                            <h3 className="text-xl text-slate-600 font-bold mb-2">Search for a Location</h3>
-                            <p className="text-slate-500">Enter a location above to view vendor images and details</p>
-                        </div>
                     ) : (
                         <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
                             <MapPin className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                             <h3 className="text-xl text-slate-600 font-bold mb-2">No Vendors Found</h3>
-                            <p className="text-slate-500">Try changing your location or check back later.</p>
+                            <p className="text-slate-500">Try searching for a different location.</p>
                         </div>
                     )}
                 </div>

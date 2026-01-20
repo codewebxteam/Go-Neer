@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { MOCK_PRODUCTS, MOCK_ORDERS, MOCK_VENDORS } from '../../data/mockData'
-import { Plus, Package, ShoppingBag, Trash2, Edit, Check, X, Truck, TrendingUp, AlertCircle, Target, BarChart3, Users, DollarSign, Star, Eye, Eye as EyeOff, Clock } from 'lucide-react'
+import { queryDocuments, updateDocument, deleteDocument } from '../../services/firestoreService'
+import { Plus, Package, ShoppingBag, Trash2, Edit, Check, X, Truck, TrendingUp, AlertCircle, Target, BarChart3, Users, DollarSign, Star, Eye, Eye as EyeOff, Clock, Loader2 } from 'lucide-react'
 import AddProductModal from '../../components/vendor/AddProductModal'
 import { toast } from 'react-toastify'
 
@@ -15,18 +15,37 @@ export default function VendorDashboard() {
     const [isLoading, setIsLoading] = useState(true)
 
     const loadData = async () => {
-        setIsLoading(true)
-        await new Promise(resolve => setTimeout(resolve, 600))
+        try {
+            setIsLoading(true)
 
-        const myProducts = MOCK_PRODUCTS.filter(p => p.vendor_id === user?.id || p.vendor_id === 'vendor-1')
-        setProducts(myProducts)
-        setOrders(MOCK_ORDERS)
-        setIsLoading(false)
+            // Fetch vendor's products
+            const myProducts = await queryDocuments('products', {
+                where: ['vendorId', '==', user?.uid]
+            })
+            setProducts(myProducts)
+
+            // Fetch vendor's orders
+            const vendorOrders = await queryDocuments('orders', {
+                where: ['vendorId', '==', user?.uid]
+            })
+            setOrders(vendorOrders)
+        } catch (error) {
+            console.error('Error loading vendor data:', error)
+            toast.error('Failed to load data')
+        } finally {
+            setIsLoading(false)
+        }
     }
+
+    useEffect(() => {
+        if (user?.uid) {
+            loadData()
+        }
+    }, [user?.uid])
 
     // Get low stock products
     const getLowStockProducts = () => {
-        return products.filter(p => p.stock < 10)
+        return products.filter(p => (p.stock || 0) < 10)
     }
 
     // Get popular products (most ordered)
@@ -35,9 +54,9 @@ export default function VendorDashboard() {
         
         const productOrderCount = {}
         orders.forEach(order => {
-            order.order_items?.forEach(item => {
-                const productId = item.product_id
-                productOrderCount[productId] = (productOrderCount[productId] || 0) + item.quantity
+            order.items?.forEach(item => {
+                const productId = item.productId || item.id
+                productOrderCount[productId] = (productOrderCount[productId] || 0) + (item.quantity || 1)
             })
         })
         
@@ -53,21 +72,39 @@ export default function VendorDashboard() {
         return orders.filter(o => o.status === 'pending' || o.status === 'Pending')
     }
 
-    useEffect(() => {
-        if (user) {
-            loadData()
-        }
-    }, [user])
-
     const handleDeleteProduct = async (id) => {
         if (!window.confirm("Are you sure you want to delete this product?")) return;
-        setProducts(products.filter(p => p.id !== id))
-        toast.success("Product deleted")
+        try {
+            await deleteDocument('products', id)
+            setProducts(products.filter(p => p.id !== id))
+            toast.success("Product deleted successfully")
+        } catch (error) {
+            console.error('Delete error:', error)
+            toast.error("Failed to delete product")
+        }
+    }
+
+    const toggleProductAvailability = async (id, currentStock) => {
+        try {
+            const newAvailability = currentStock > 0
+            await updateDocument('products', id, { is_available: newAvailability })
+            setProducts(products.map(p => p.id === id ? { ...p, is_available: newAvailability } : p))
+            toast.success(newAvailability ? "Product marked as in stock" : "Product marked as out of stock")
+        } catch (error) {
+            console.error('Update error:', error)
+            toast.error("Failed to update product")
+        }
     }
 
     const updateOrderStatus = async (orderId, newStatus) => {
-        setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o))
-        toast.success(`Order ${newStatus}`)
+        try {
+            await updateDocument('orders', orderId, { status: newStatus })
+            setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o))
+            toast.success(`Order marked as ${newStatus}`)
+        } catch (error) {
+            console.error('Update error:', error)
+            toast.error("Failed to update order status")
+        }
     }
 
     const handleProductAdded = (newProduct) => {
@@ -339,7 +376,10 @@ export default function VendorDashboard() {
 
                         <div className="p-4 sm:p-6 max-h-96 overflow-y-auto">
                             {isLoading ? (
-                                <div className="text-center py-12 text-slate-400">Loading products...</div>
+                                <div className="text-center py-12 text-slate-400 flex flex-col items-center">
+                                    <Loader2 className="w-8 h-8 animate-spin mb-2 text-blue-500" />
+                                    Loading products...
+                                </div>
                             ) : products.length === 0 ? (
                                 <div className="text-center py-12">
                                     <Package className="w-12 h-12 text-slate-300 mx-auto mb-4" />
@@ -355,13 +395,13 @@ export default function VendorDashboard() {
                             ) : (
                                 <div className="space-y-3">
                                     {products.map((product) => (
-                                        <div key={product.id} className="p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all">
-                                            <div className="flex justify-between items-start gap-2 mb-2">
-                                                <div className="flex-1">
-                                                    <h4 className="font-semibold text-slate-800 text-sm">{product.name}</h4>
+                                        <div key={product.id} className="p-3 sm:p-4 rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all">
+                                            <div className="flex flex-col sm:flex-row justify-between items-start gap-2 mb-2">
+                                                <div className="flex-1 min-w-0">
+                                                    <h4 className="font-semibold text-slate-800 text-sm truncate">{product.name}</h4>
                                                     <p className="text-xs text-slate-500">₹{product.price}</p>
                                                 </div>
-                                                <div className="flex gap-1">
+                                                <div className="flex gap-1 flex-shrink-0">
                                                     <button 
                                                         onClick={() => navigate(`/vendor/product/${product.id}`)}
                                                         className="p-1.5 hover:bg-blue-100 rounded-lg text-blue-600 transition-colors"
@@ -378,15 +418,27 @@ export default function VendorDashboard() {
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div className="flex justify-between items-center text-xs">
-                                                <span className="text-slate-600">Stock: {product.stock}</span>
-                                                <span className={`px-2 py-0.5 rounded-full font-bold ${
-                                                    product.stock > 20 ? 'bg-green-100 text-green-700' :
-                                                    product.stock > 10 ? 'bg-yellow-100 text-yellow-700' :
-                                                    'bg-red-100 text-red-700'
-                                                }`}>
-                                                    {product.stock > 20 ? 'In Stock' : product.stock > 10 ? 'Low Stock' : 'Critical'}
-                                                </span>
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                                <span className="text-xs text-slate-600">Stock: <strong>{product.stock}</strong></span>
+                                                <div className="flex gap-2 w-full sm:w-auto">
+                                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                                                        product.stock > 20 ? 'bg-green-100 text-green-700' :
+                                                        product.stock > 10 ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-red-100 text-red-700'
+                                                    }`}>
+                                                        {product.stock > 20 ? 'In Stock' : product.stock > 10 ? 'Low Stock' : 'Critical'}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => toggleProductAvailability(product.id, product.stock)}
+                                                        className={`text-xs font-bold px-2 py-0.5 rounded-full flex items-center gap-1 transition-colors ${
+                                                            product.is_available ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                        }`}
+                                                        title={product.is_available ? "Click to mark as out of stock" : "Click to mark as in stock"}
+                                                    >
+                                                        {product.is_available ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                                                        {product.stock > 0 ? 'In Stock' : 'Out'}
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}

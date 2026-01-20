@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { MOCK_USERS, MOCK_PROFILES } from '../data/mockData'
+import { onAuthChange } from '../services/authService'
+import { getDocument, updateDocument } from '../services/firestoreService'
 
 const AuthContext = createContext({})
 
@@ -11,89 +12,104 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        // Simulate checking for a persisted session (e.g., from localStorage)
-        const storedUser = localStorage.getItem('mock_user')
-        if (storedUser) {
+        // Set a timeout to stop loading after 10 seconds
+        const loadingTimeout = setTimeout(() => {
+            setLoading(false)
+        }, 10000)
+
+        // Listen to Firebase auth state changes
+        const unsubscribe = onAuthChange(async (currentUser) => {
             try {
-                const parsedUser = JSON.parse(storedUser)
-                setUser(parsedUser)
-                // Find matching profile
-                const foundProfile = MOCK_PROFILES.find(p => p.id === parsedUser.id)
-                setProfile(foundProfile || null)
-            } catch (e) {
-                console.error("Failed to parse stored user", e)
-                localStorage.removeItem('mock_user')
+                if (currentUser) {
+                    setUser(currentUser)
+                    // Fetch user profile from Firestore
+                    const userProfile = await getDocument('users', currentUser.uid)
+                    setProfile(userProfile || null)
+                } else {
+                    setUser(null)
+                    setProfile(null)
+                }
+            } catch (error) {
+                console.error("Error fetching user profile:", error)
+            } finally {
+                setLoading(false)
+                clearTimeout(loadingTimeout)
             }
+        })
+
+        return () => {
+            unsubscribe()
+            clearTimeout(loadingTimeout)
         }
-        setLoading(false)
     }, [])
 
     const login = async (email, password) => {
-        setLoading(true)
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 800))
-
-        const foundUser = MOCK_USERS.find(u => u.email === email && u.password === password)
-
-        if (foundUser) {
-            setUser(foundUser)
-            localStorage.setItem('mock_user', JSON.stringify(foundUser))
-
-            const foundProfile = MOCK_PROFILES.find(p => p.id === foundUser.id)
-            setProfile(foundProfile)
-
-            setLoading(false)
-            return { user: foundUser, error: null }
-        } else {
-            setLoading(false)
-            return { user: null, error: { message: 'Invalid credentials' } }
+        try {
+            const { signIn } = await import('../services/authService')
+            const result = await signIn(email, password)
+            
+            // Fetch user profile
+            const userProfile = await getDocument('users', result.user.uid)
+            console.log('Login context - user profile:', userProfile)
+            
+            return { user: result.user, error: null, profile: userProfile }
+        } catch (error) {
+            console.error('Login context error:', error)
+            return { user: null, error, profile: null }
         }
     }
 
     const signup = async (email, password, fullName, role) => {
-        setLoading(true)
-        await new Promise(resolve => setTimeout(resolve, 800))
-
-        // Check if user already exists
-        if (MOCK_USERS.some(u => u.email === email)) {
-            setLoading(false)
-            return { user: null, error: { message: 'User already exists' } }
+        try {
+            const { signUp } = await import('../services/authService')
+            const { setDoc, doc } = await import('firebase/firestore')
+            const { db } = await import('../config/firebase')
+            
+            const result = await signUp(email, password)
+            
+            // Create user profile in Firestore with uid as document ID
+            const newProfile = {
+                email,
+                displayName: fullName,
+                role,
+                createdAt: new Date(),
+                photoURL: null,
+                uid: result.user.uid
+            }
+            
+            // Use setDoc to create document with custom ID (uid)
+            await setDoc(doc(db, 'users', result.user.uid), newProfile)
+            console.log('Signup context - user profile created:', newProfile)
+            
+            return { user: result.user, error: null, profile: newProfile }
+        } catch (error) {
+            console.error('Signup context error:', error)
+            return { user: null, error: error, profile: null }
         }
-
-        const newUser = {
-            id: `user-${Date.now()}`,
-            email,
-            password,
-            user_metadata: { full_name: fullName },
-            role
-        }
-
-        const newProfile = {
-            id: newUser.id,
-            full_name: fullName,
-            role: role
-        }
-
-        // Add to mock data (in-memory only for now, resets on reload unless we persist MOCK_USERS too, but this is fine for demo)
-        MOCK_USERS.push(newUser)
-        MOCK_PROFILES.push(newProfile)
-
-        // Auto login
-        setUser(newUser)
-        setProfile(newProfile)
-        localStorage.setItem('mock_user', JSON.stringify(newUser))
-
-        setLoading(false)
-        return { user: newUser, error: null }
     }
 
     const signOut = async () => {
         setLoading(true)
-        await new Promise(resolve => setTimeout(resolve, 500))
-        setUser(null)
-        setProfile(null)
-        localStorage.removeItem('mock_user')
-        setLoading(false)
+        try {
+            const { signOut: firebaseSignOut } = await import('../services/authService')
+            await firebaseSignOut()
+        } catch (error) {
+            console.error("Sign out error:", error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const updateProfile = async (data) => {
+        try {
+            if (user) {
+                await updateDocument('users', user.uid, data)
+                setProfile(prev => ({ ...prev, ...data }))
+            }
+        } catch (error) {
+            console.error("Error updating profile:", error)
+            throw error
+        }
     }
 
     const value = {
@@ -103,6 +119,7 @@ export const AuthProvider = ({ children }) => {
         login,
         signup,
         signOut,
+        updateProfile,
     }
 
     if (loading) {

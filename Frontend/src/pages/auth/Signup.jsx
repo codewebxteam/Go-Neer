@@ -28,30 +28,60 @@ export default function Signup() {
             return toast.error("Passwords do not match")
         }
 
+        if (formData.password.length < 6) {
+            return toast.error("Password must be at least 6 characters")
+        }
+
         setLoading(true)
 
         try {
-            const { user, error } = await signup(
+            const { user, error, profile } = await signup(
                 formData.email.trim(),
                 formData.password,
                 formData.fullName.trim(),
                 role
             )
 
-            if (error) throw error
-
-            toast.success('Account created successfully!')
-
-            // Redirect based on role
-            if (role === 'vendor') {
-                navigate('/vendor/dashboard')
-            } else {
-                navigate('/')
+            if (error) {
+                throw error
             }
 
+            if (!user) {
+                throw new Error("Signup failed: No user returned")
+            }
+
+            console.log('Signup successful:', { user: user?.email, role, profile })
+            toast.success('Account created successfully!')
+
+            // Add small delay to ensure auth state is updated
+            setTimeout(() => {
+                console.log('Redirecting... Role:', role, 'Profile:', profile)
+                // Redirect based on role
+                if (role === 'vendor') {
+                    console.log('Navigating to vendor dashboard')
+                    navigate('/vendor/dashboard')
+                } else {
+                    console.log('Navigating to home')
+                    navigate('/')
+                }
+            }, 500)
+
         } catch (error) {
-            toast.error(error.message)
-        } finally {
+            console.error('Signup error:', error)
+            // Handle specific Firebase errors
+            let errorMessage = error.message || 'Signup failed'
+            
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = 'This email is already registered. Please log in instead.'
+            } else if (error.code === 'auth/weak-password') {
+                errorMessage = 'Password is too weak. Please use a stronger password (at least 6 characters).'
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = 'Please enter a valid email address.'
+            } else if (error.code === 'auth/operation-not-allowed') {
+                errorMessage = 'Email/password accounts are not enabled.'
+            }
+            
+            toast.error(errorMessage)
             setLoading(false)
         }
     }

@@ -67,7 +67,7 @@ export default function Header() {
                                 {user ? (
                                     <>
                                         <div className="text-sm font-semibold text-slate-900">
-                                            {profile?.name || user.email}
+                                            {profile?.displayName || user.email}
                                         </div>
                                         <div className="text-xs text-slate-500">
                                             {profile?.role || 'User'}

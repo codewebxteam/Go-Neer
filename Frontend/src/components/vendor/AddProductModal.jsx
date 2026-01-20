@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { X, Loader2, Plus } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../context/AuthContext'
+import { addDocument } from '../../services/firestoreService'
 
 export default function AddProductModal({ isOpen, onClose, onProductAdded }) {
     const { user } = useAuth()
@@ -45,25 +46,36 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }) {
         setLoading(true)
         
         try {
-            // Simulate Network
-            await new Promise(resolve => setTimeout(resolve, 600))
+            if (!user?.uid) {
+                toast.error('User not authenticated')
+                setLoading(false)
+                return
+            }
 
-            const newProduct = {
-                id: `prod-${Date.now()}`,
-                vendor_id: user?.id || 'vendor-1',
+            const productData = {
+                vendorId: user.uid,
                 name: formData.name.trim(),
                 description: formData.description.trim(),
                 price: parseFloat(formData.price),
                 stock: parseInt(formData.stock),
                 image_url: formData.image_url.trim() || 'https://images.unsplash.com/photo-1564419320461-6870880221ad?auto=format&fit=crop&q=80&w=1000',
                 is_available: parseInt(formData.stock) > 0,
-                created_at: new Date().toISOString()
+                status: 'active'
+            }
+
+            // Save to Firebase
+            const productId = await addDocument('products', productData)
+            
+            const newProduct = {
+                id: productId,
+                ...productData
             }
 
             if (onProductAdded && typeof onProductAdded === 'function') {
                 onProductAdded(newProduct)
             }
             
+            toast.success('Product added successfully!')
             onClose()
             
             // Reset form

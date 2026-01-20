@@ -22,29 +22,45 @@ export default function Login() {
         setLoading(true)
 
         try {
-            const { user, error } = await login(formData.email.trim(), formData.password)
+            const { user, error, profile } = await login(formData.email.trim(), formData.password)
 
             if (error) throw error
 
+            console.log('Login successful:', { user: user?.email, profile })
             toast.success('Welcome back!')
 
-            // Redirect based on role
-            // We need to fetch role from the profile which is now in context, 
-            // but login returns user object. We can check user.role directly in mock data for simplicity
-            // or rely on context update. 
-            // Since context updates might be async, we'll check the returned user object.
-
-            if (user.role === 'vendor') {
-                navigate('/vendor/dashboard')
-            } else if (user.role === 'admin') {
-                navigate('/admin/dashboard')
-            } else {
-                navigate('/')
-            }
+            // Add small delay to ensure auth state is updated
+            setTimeout(() => {
+                console.log('Redirecting... Profile role:', profile?.role)
+                // Redirect based on role
+                if (profile?.role === 'vendor') {
+                    console.log('Navigating to vendor dashboard')
+                    navigate('/vendor/dashboard')
+                } else if (profile?.role === 'admin') {
+                    console.log('Navigating to admin dashboard')
+                    navigate('/admin/dashboard')
+                } else {
+                    console.log('Navigating to home')
+                    navigate('/')
+                }
+            }, 500)
 
         } catch (error) {
-            toast.error(error.message)
-        } finally {
+            console.error('Login error:', error)
+            // Handle specific Firebase errors
+            let errorMessage = error.message || 'Login failed'
+            
+            if (error.code === 'auth/user-not-found') {
+                errorMessage = 'No account found with this email. Please sign up first.'
+            } else if (error.code === 'auth/wrong-password') {
+                errorMessage = 'Incorrect password. Please try again.'
+            } else if (error.code === 'auth/invalid-credential') {
+                errorMessage = 'Invalid email or password. Please try again.'
+            } else if (error.code === 'auth/too-many-requests') {
+                errorMessage = 'Too many failed login attempts. Please try again later.'
+            }
+            
+            toast.error(errorMessage)
             setLoading(false)
         }
     }
@@ -89,7 +105,7 @@ export default function Login() {
                         <div>
                             <div className="flex justify-between items-center mb-2">
                                 <label className="block text-sm font-medium text-slate-700">Password</label>
-                                <a href="#" className="text-sm text-blue-600 hover:underline">Forgot password?</a>
+                                <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">Forgot password?</Link>
                             </div>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -118,11 +134,9 @@ export default function Login() {
                         Don't have an account? <Link to="/signup" className="text-blue-600 font-bold hover:underline">Create an account</Link>
                     </div>
 
-                    <div className="mt-4 p-4 bg-yellow-50 rounded-lg text-xs text-yellow-800 border border-yellow-200">
-                        <p className="font-bold mb-1">Demo Credentials:</p>
-                        <p>User: user@test.com / password123</p>
-                        <p>Vendor: vendor@test.com / password123</p>
-                        <p>Admin: admin@test.com / password123</p>
+                    <div className="mt-4 p-4 bg-blue-50 rounded-lg text-xs text-blue-800 border border-blue-200">
+                        <p className="font-bold mb-1">Firebase Backend Active</p>
+                        <p>Create a new account or use existing credentials to sign in</p>
                     </div>
                 </div>
             </div>
