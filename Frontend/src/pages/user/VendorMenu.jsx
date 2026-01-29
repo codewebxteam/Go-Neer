@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { getDocument, queryDocuments } from '../../services/firestoreService'
 import { useCart } from '../../context/CartContext'
 import { ArrowLeft, Star, Clock, MapPin, Plus, Minus, ShoppingCart, Loader2 } from 'lucide-react'
+import { MOCK_PRODUCTS, MOCK_VENDORS } from '../../data/mockData'
 
 export default function VendorMenu() {
     const { id } = useParams()
@@ -18,24 +19,56 @@ export default function VendorMenu() {
             try {
                 setLoading(true)
                 setError(null)
+                console.log('VendorMenu: Starting fetch for vendor ID:', id)
 
                 // Fetch vendor details
-                const vendorData = await getDocument('vendors', id)
+                let vendorData = await getDocument('vendors', id)
+                console.log('VendorMenu: Firestore vendorData:', vendorData)
+                
+                // Fallback to mock data if not found
                 if (!vendorData) {
+                    console.log('VendorMenu: Firestore returned null, trying mock data...')
+                    vendorData = MOCK_VENDORS.find(v => v.id === id)
+                    console.log('VendorMenu: Mock vendorData found:', vendorData)
+                }
+                
+                if (!vendorData) {
+                    console.error('VendorMenu: No vendor found with ID:', id)
                     setError('Vendor not found')
                     setLoading(false)
                     return
                 }
                 setVendor(vendorData)
+                console.log('VendorMenu: Vendor set to:', vendorData)
 
                 // Fetch products for this vendor
-                const vendorProducts = await queryDocuments('products', {
+                let vendorProducts = await queryDocuments('products', {
                     where: ['vendorId', '==', id]
                 })
+                console.log('VendorMenu: Firestore products:', vendorProducts)
+                
+                // Fallback to mock products if empty
+                if (vendorProducts.length === 0) {
+                    console.log('VendorMenu: No Firestore products, using mock products...')
+                    vendorProducts = MOCK_PRODUCTS.filter(p => p.vendorId === id)
+                    console.log('VendorMenu: Mock products filtered:', vendorProducts)
+                }
+                
                 setProducts(vendorProducts)
+                console.log('VendorMenu: Products set, count:', vendorProducts.length)
             } catch (err) {
                 console.error('Error fetching vendor data:', err)
-                setError(err.message || 'Failed to load vendor')
+                
+                // Try mock data as fallback
+                const mockVendor = MOCK_VENDORS.find(v => v.id === id)
+                if (mockVendor) {
+                    setVendor(mockVendor)
+                    const mockProducts = MOCK_PRODUCTS.filter(p => p.vendorId === id)
+                    setProducts(mockProducts)
+                    console.log('VendorMenu: Using mock fallback - vendor:', mockVendor.shop_name, 'products:', mockProducts.length)
+                } else {
+                    setError(err.message || 'Failed to load vendor')
+                }
             } finally {
                 setLoading(false)
             }
@@ -82,11 +115,11 @@ export default function VendorMenu() {
 
                     <div className="flex flex-col md:flex-row md:items-center justify-between">
                         <div>
-                            <h1 className="text-4xl font-bold text-slate-900 mb-2">{vendor.storeName}</h1>
+                            <h1 className="text-4xl font-bold text-slate-900 mb-2">{vendor.storeName || vendor.shop_name}</h1>
                             <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
                                 <div className="flex items-center">
                                     <MapPin className="w-4 h-4 mr-1 text-slate-400" />
-                                    {vendor.description || "Description not provided"}
+                                    {vendor.description || vendor.address || "Location not provided"}
                                 </div>
                                 <div className="flex items-center">
                                     <Star className="w-4 h-4 mr-1 text-yellow-500 fill-yellow-500" />
@@ -94,7 +127,7 @@ export default function VendorMenu() {
                                 </div>
                                 <div className="flex items-center">
                                     <Clock className="w-4 h-4 mr-1 text-slate-400" />
-                                    15-30 min delivery
+                                    {vendor.delivery_time || "15-30 min"} delivery
                                 </div>
                             </div>
                         </div>
@@ -108,19 +141,20 @@ export default function VendorMenu() {
 
             {/* Menu */}
             <div className="container mx-auto px-4 py-8">
-                <h2 className="text-2xl font-bold text-slate-800 mb-6">Menu</h2>
+                <h2 className="text-2xl font-bold text-slate-800 mb-6">Products ({products.length})</h2>
 
-                {products.length === 0 ? (
+                {products && products.length === 0 ? (
                     <div className="bg-white p-8 rounded-xl border border-slate-200 text-center">
                         <p className="text-slate-600">No products available from this vendor yet</p>
+                        <p className="text-slate-400 text-sm mt-2">Vendor ID: {id}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {products.map(product => (
+                        {products && products.map(product => (
                             <div key={product.id} className="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-lg transition-all flex flex-col">
-                                {product.image && (
-                                    <div className="h-48 overflow-hidden">
-                                        <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                                {(product.image || product.image_url) && (
+                                    <div className="h-48 overflow-hidden bg-slate-100">
+                                        <img src={product.image || product.image_url} alt={product.name} className="w-full h-full object-cover" />
                                     </div>
                                 )}
                                 <div className="p-4 flex-grow flex flex-col justify-between">

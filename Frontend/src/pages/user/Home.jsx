@@ -275,21 +275,22 @@ export default function Home() {
                                 <h3 className="text-2xl font-bold text-slate-900 mb-6">Vendor Images</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                     {filteredVendors.map((vendor) => (
-                                        <motion.div
-                                            key={vendor.id}
-                                            variants={itemVariants}
-                                            className="relative group cursor-pointer rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 h-64"
-                                        >
-                                            <img
-                                                src={vendor.image_url}
-                                                alt={vendor.shop_name}
-                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 text-white">
-                                                <h3 className="font-bold text-lg">{vendor.shop_name}</h3>
-                                                <p className="text-sm text-gray-200">{vendor.address}</p>
-                                            </div>
-                                        </motion.div>
+                                        <Link key={vendor.id} to={`/vendor/${vendor.id}`} className="block">
+                                            <motion.div
+                                                variants={itemVariants}
+                                                className="relative group cursor-pointer rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 h-64"
+                                            >
+                                                <img
+                                                    src={vendor.image_url}
+                                                    alt={vendor.shop_name}
+                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 text-white">
+                                                    <h3 className="font-bold text-lg">{vendor.shop_name}</h3>
+                                                    <p className="text-sm text-gray-200">{vendor.address}</p>
+                                                </div>
+                                            </motion.div>
+                                        </Link>
                                     ))}
                                 </div>
                             </div>
@@ -302,31 +303,31 @@ export default function Home() {
                                     <div className="lg:col-span-1">
                                         <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                                             {filteredVendors.map((vendor) => (
-                                                <motion.div 
-                                                    key={vendor.id} 
-                                                    variants={itemVariants}
-                                                    className="bg-white p-4 rounded-xl shadow-md border border-slate-100 hover:shadow-lg transition-all"
-                                                >
-                                                    <div className="flex gap-3 mb-3">
-                                                        <img 
-                                                            src={vendor.image_url} 
-                                                            alt={vendor.shop_name}
-                                                            className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                                                        />
-                                                        <div className="flex-grow">
-                                                            <h4 className="font-bold text-slate-900 text-sm">{vendor.shop_name}</h4>
-                                                            <p className="text-xs text-slate-500">{vendor.city}</p>
-                                                            <div className="flex items-center gap-1 mt-1">
-                                                                <span className="text-yellow-500 text-xs">★</span>
-                                                                <span className="font-bold text-xs text-slate-700">{vendor.rating}</span>
+                                                <Link key={vendor.id} to={`/vendor/${vendor.id}`} className="block hover:no-underline">
+                                                    <motion.div 
+                                                        variants={itemVariants}
+                                                        className="bg-white p-4 rounded-xl shadow-md border border-slate-100 hover:shadow-lg transition-all cursor-pointer"
+                                                    >
+                                                        <div className="flex gap-3 mb-3">
+                                                            <img 
+                                                                src={vendor.image_url} 
+                                                                alt={vendor.shop_name}
+                                                                className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                                                            />
+                                                            <div className="flex-grow">
+                                                                <h4 className="font-bold text-slate-900 text-sm">{vendor.shop_name}</h4>
+                                                                <p className="text-xs text-slate-500">{vendor.city}</p>
+                                                                <div className="flex items-center gap-1 mt-1">
+                                                                    <span className="text-yellow-500 text-xs">★</span>
+                                                                    <span className="font-bold text-xs text-slate-700">{vendor.rating}</span>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                    <div className="space-y-2 text-xs text-slate-600">
-                                                        <div className="flex items-start gap-2">
-                                                            <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0 text-blue-600" />
-                                                            <span>{vendor.address}</span>
-                                                        </div>
+                                                        <div className="space-y-2 text-xs text-slate-600">
+                                                            <div className="flex items-start gap-2">
+                                                                <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0 text-blue-600" />
+                                                                <span>{vendor.address}</span>
+                                                            </div>
                                                         <div className="flex items-center gap-2">
                                                             <Clock className="w-3 h-3 flex-shrink-0 text-blue-600" />
                                                             <span>{vendor.delivery_time || '15-30 min'}</span>
@@ -335,7 +336,8 @@ export default function Home() {
                                                     <span className={`inline-block mt-3 px-2 py-1 rounded-full text-xs font-bold ${vendor.is_open ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                         {vendor.is_open ? 'Open Now' : 'Closed'}
                                                     </span>
-                                                </motion.div>
+                                                    </motion.div>
+                                                </Link>
                                             ))}
                                         </div>
                                     </div>

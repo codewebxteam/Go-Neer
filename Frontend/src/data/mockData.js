@@ -132,30 +132,147 @@ export const MOCK_VENDORS = [
 export const MOCK_PRODUCTS = [
     {
         id: 'p1',
-        vendor_id: 'vendor-1',
+        vendorId: 'v1',
         name: '20L Bisleri Water Jar',
         description: 'Pure mineral water in a 20L jar. Refundable deposit required.',
         price: 80,
         stock: 50,
-        image_url: 'https://m.media-amazon.com/images/I/41-j+-4XbSL.jpg'
+        image: 'https://m.media-amazon.com/images/I/41-j+-4XbSL.jpg'
     },
     {
         id: 'p2',
-        vendor_id: 'vendor-1',
+        vendorId: 'v1',
         name: '1L Water Bottle (Case of 12)',
         description: 'Perfect for events and parties.',
         price: 240,
         stock: 100,
-        image_url: 'https://m.media-amazon.com/images/I/61Z6y3jXjmL._SL1500_.jpg'
+        image: 'https://m.media-amazon.com/images/I/61Z6y3jXjmL._SL1500_.jpg'
     },
     {
         id: 'p3',
-        vendor_id: 'vendor-1', // Shared vendor for demo
+        vendorId: 'v1',
         name: 'Cooling Water Dispenser',
-        description: 'Electric water dispenser with formatting.',
+        description: 'Electric water dispenser with cooling feature.',
         price: 3500,
         stock: 5,
-        image_url: 'https://m.media-amazon.com/images/I/41K0p5S5HFL.jpg'
+        image: 'https://m.media-amazon.com/images/I/41K0p5S5HFL.jpg'
+    },
+    {
+        id: 'p4',
+        vendorId: 'v2',
+        name: '10L Himalayan Spring Water',
+        description: 'Premium spring water from Himalayas.',
+        price: 120,
+        stock: 40,
+        image: 'https://m.media-amazon.com/images/I/41-j+-4XbSL.jpg'
+    },
+    {
+        id: 'p5',
+        vendorId: 'v2',
+        name: 'Bottled Spring Water 500ml (Pack of 24)',
+        description: 'Pure spring water in convenient 500ml bottles.',
+        price: 180,
+        stock: 80,
+        image: 'https://m.media-amazon.com/images/I/61Z6y3jXjmL._SL1500_.jpg'
+    },
+    {
+        id: 'p6',
+        vendorId: 'v3',
+        name: 'Crystal Clear RO Water',
+        description: 'Advanced RO filtered drinking water.',
+        price: 100,
+        stock: 60,
+        image: 'https://m.media-amazon.com/images/I/61Z6y3jXjmL._SL1500_.jpg'
+    },
+    {
+        id: 'p7',
+        vendorId: 'v3',
+        name: 'Water Purifier (Wall Mounted)',
+        description: 'Wall-mounted water purifier with RO technology.',
+        price: 8999,
+        stock: 3,
+        image: 'https://m.media-amazon.com/images/I/41K0p5S5HFL.jpg'
+    },
+    {
+        id: 'p8',
+        vendorId: 'v4',
+        name: 'Fresh Spring Water 20L',
+        description: 'Fresh spring water for the whole family.',
+        price: 90,
+        stock: 45,
+        image: 'https://m.media-amazon.com/images/I/41-j+-4XbSL.jpg'
+    },
+    {
+        id: 'p9',
+        vendorId: 'v4',
+        name: 'Water Cooler Machine',
+        description: 'Electric water cooler with hot and cold options.',
+        price: 4500,
+        stock: 7,
+        image: 'https://m.media-amazon.com/images/I/41K0p5S5HFL.jpg'
+    },
+    {
+        id: 'p10',
+        vendorId: 'v5',
+        name: 'Pure Mineral Water 20L',
+        description: 'Mineral-rich water sourced from natural springs.',
+        price: 85,
+        stock: 55,
+        image: 'https://m.media-amazon.com/images/I/41-j+-4XbSL.jpg'
+    },
+    {
+        id: 'p11',
+        vendorId: 'v5',
+        name: 'Water Bottles 1L (Pack of 6)',
+        description: 'Reusable water bottles made from BPA-free plastic.',
+        price: 299,
+        stock: 120,
+        image: 'https://m.media-amazon.com/images/I/61Z6y3jXjmL._SL1500_.jpg'
+    },
+    {
+        id: 'p12',
+        vendorId: 'v6',
+        name: 'Anand Spring Water 20L',
+        description: 'Pure spring water from the Anand region.',
+        price: 95,
+        stock: 50,
+        image: 'https://m.media-amazon.com/images/I/41-j+-4XbSL.jpg'
+    },
+    {
+        id: 'p13',
+        vendorId: 'v6',
+        name: 'Water Filter Pitcher',
+        description: 'Portable water filter pitcher for home use.',
+        price: 599,
+        stock: 30,
+        image: 'https://m.media-amazon.com/images/I/61Z6y3jXjmL._SL1500_.jpg'
+    },
+    {
+        id: 'p14',
+        vendorId: 'v7',
+        name: 'Premium Aqua Water 20L',
+        description: 'Premium quality water with advanced filtration.',
+        price: 100,
+        stock: 48,
+        image: 'https://m.media-amazon.com/images/I/41-j+-4XbSL.jpg'
+    },
+    {
+        id: 'p15',
+        vendorId: 'v7',
+        name: 'Water Dispenser Stand',
+        description: 'Heavy-duty stand for water dispensers.',
+        price: 1200,
+        stock: 15,
+        image: 'https://m.media-amazon.com/images/I/41K0p5S5HFL.jpg'
+    },
+    {
+        id: 'p16',
+        vendorId: 'v7',
+        name: 'Water Testing Kit',
+        description: 'Complete water quality testing kit for home use.',
+        price: 499,
+        stock: 25,
+        image: 'https://m.media-amazon.com/images/I/61Z6y3jXjmL._SL1500_.jpg'
     }
 ];
 
