@@ -79,9 +79,9 @@ export const AuthProvider = ({ children }) => {
 
             // 🔹 Firestore collection
             const collectionName =
-                role === "vendor"
+                role == "vendor"
                     ? "vendors"
-                    : role === "admin"
+                    : role == "admin"
                         ? "admins"
                         : "users";
 

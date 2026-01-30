@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { MOCK_VENDORS, MOCK_PRODUCTS } from '../../data/mockData'
 import { useCart } from '../../context/CartContext'
 import { ArrowLeft, Star, Clock, MapPin, Plus, ShoppingCart, Check, X, Minus, Trash2 } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 
 export default function VendorMenu() {
     const { id } = useParams()
