@@ -1,122 +1,140 @@
-import { createContext, useContext, useEffect, useState } from 'react'
-import { MOCK_USERS, MOCK_PROFILES } from '../data/mockData'
+import { createContext, useContext, useEffect, useState } from "react";
+import {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
+    updateProfile,
+    signOut as firebaseSignOut,
+} from "firebase/auth";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "../config/firebase";
 
-const AuthContext = createContext({})
-
-export const useAuth = () => useContext(AuthContext)
+const AuthContext = createContext(null);
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null)
-    const [profile, setProfile] = useState(null)
-    const [loading, setLoading] = useState(true)
+    const [user, setUser] = useState(null);      // Firebase Auth user
+    const [profile, setProfile] = useState(null); // Firestore profile
+    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // Simulate checking for a persisted session (e.g., from localStorage)
-        const storedUser = localStorage.getItem('mock_user')
-        if (storedUser) {
-            try {
-                const parsedUser = JSON.parse(storedUser)
-                setUser(parsedUser)
-                // Find matching profile
-                const foundProfile = MOCK_PROFILES.find(p => p.id === parsedUser.id)
-                setProfile(foundProfile || null)
-            } catch (e) {
-                console.error("Failed to parse stored user", e)
-                localStorage.removeItem('mock_user')
+    // 🔁 Load profile by role
+    const loadUserProfile = async (uid) => {
+        const collections = ["users", "vendors", "admins"];
+        for (const col of collections) {
+            const ref = doc(db, col, uid);
+            const snap = await getDoc(ref);
+            if (snap.exists()) {
+                setProfile({ id: uid, ...snap.data() });
+                return;
             }
         }
-        setLoading(false)
-    }, [])
+        setProfile(null);
+    };
 
+    // 🔄 Monitor Auth State
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                setUser(currentUser);
+                await loadUserProfile(currentUser.uid);
+            } else {
+                setUser(null);
+                setProfile(null);
+            }
+            setLoading(false);
+        });
+
+        return unsubscribe;
+    }, []);
+
+    // 🔐 LOGIN
     const login = async (email, password) => {
-        setLoading(true)
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 800))
-
-        const foundUser = MOCK_USERS.find(u => u.email === email && u.password === password)
-
-        if (foundUser) {
-            setUser(foundUser)
-            localStorage.setItem('mock_user', JSON.stringify(foundUser))
-
-            const foundProfile = MOCK_PROFILES.find(p => p.id === foundUser.id)
-            setProfile(foundProfile)
-
-            setLoading(false)
-            return { user: foundUser, error: null }
-        } else {
-            setLoading(false)
-            return { user: null, error: { message: 'Invalid credentials' } }
+        try {
+            setLoading(true);
+            const res = await signInWithEmailAndPassword(auth, email, password);
+            setUser(res.user);
+            await loadUserProfile(res.user.uid);
+            return { user: res.user, error: null };
+        } catch (error) {
+            console.error("Login failed:", error);
+            return { user: null, error };
+        } finally {
+            setLoading(false);
         }
-    }
+    };
 
-    const signup = async (email, password, fullName, role) => {
-        setLoading(true)
-        await new Promise(resolve => setTimeout(resolve, 800))
+    // 🆕 SIGNUP
+    const signup = async ({ email, password, fullName, phone, role }) => {
+        try {
+            setLoading(true);
 
-        // Check if user already exists
-        if (MOCK_USERS.some(u => u.email === email)) {
-            setLoading(false)
-            return { user: null, error: { message: 'User already exists' } }
+            // 🔹 Validate required fields
+            if (!email || !password || !fullName || !phone || !role) {
+                throw new Error("All signup fields are required");
+            }
+
+            // 🔹 Firebase Auth user
+            const res = await createUserWithEmailAndPassword(auth, email, password);
+            await updateProfile(res.user, { displayName: fullName });
+
+            // 🔹 Firestore collection
+            const collectionName =
+                role === "vendor"
+                    ? "vendors"
+                    : role === "admin"
+                        ? "admins"
+                        : "users";
+
+            // 🔹 Profile data
+            const profileData = {
+                id: res.user.uid,
+                email,
+                full_name: fullName,
+                phone,
+                role,
+                created_at: serverTimestamp(),
+            };
+
+
+            await setDoc(doc(db, collectionName, res.user.uid), profileData);
+
+            // 🔹 Update state
+            setUser(res.user);
+            setProfile(profileData);
+
+            console.log("Signup complete:", email, "Collection:", collectionName);
+            return { user: res.user, error: null };
+        } catch (error) {
+            console.error("Signup failed:", error);
+            return { user: null, error };
+        } finally {
+            setLoading(false);
         }
+    };
 
-        const newUser = {
-            id: `user-${Date.now()}`,
-            email,
-            password,
-            user_metadata: { full_name: fullName },
-            role
-        }
-
-        const newProfile = {
-            id: newUser.id,
-            full_name: fullName,
-            role: role
-        }
-
-        // Add to mock data (in-memory only for now, resets on reload unless we persist MOCK_USERS too, but this is fine for demo)
-        MOCK_USERS.push(newUser)
-        MOCK_PROFILES.push(newProfile)
-
-        // Auto login
-        setUser(newUser)
-        setProfile(newProfile)
-        localStorage.setItem('mock_user', JSON.stringify(newUser))
-
-        setLoading(false)
-        return { user: newUser, error: null }
-    }
-
+    // 🚪 LOGOUT
     const signOut = async () => {
-        setLoading(true)
-        await new Promise(resolve => setTimeout(resolve, 500))
-        setUser(null)
-        setProfile(null)
-        localStorage.removeItem('mock_user')
-        setLoading(false)
-    }
+        try {
+            setLoading(true);
+            await firebaseSignOut(auth);
+            setUser(null);
+            setProfile(null);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const value = {
-        user,
-        profile,
-        loading,
-        login,
-        signup,
-        signOut,
-    }
+    const value = { user, profile, loading, login, signup, signOut };
 
+    // ⏳ Loading screen
     if (loading) {
         return (
-            <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-                <p className="text-slate-400 text-sm">Loading Mock Experience...</p>
+            <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mr-3" />
+                <p className="text-slate-400 text-sm">Checking authentication...</p>
             </div>
-        )
+        );
     }
 
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    )
-}
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

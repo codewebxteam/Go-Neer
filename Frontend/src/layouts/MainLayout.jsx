@@ -41,89 +41,92 @@ export default function MainLayout() {
 
                     <div className="flex items-center space-x-4">
                         {/* Cart Icon */}
-                        <Link to="/cart" className="relative p-2 hover:bg-slate-100 rounded-full transition-colors">
-                            <ShoppingCart className="w-6 h-6 text-slate-700" />
-                            {cartItems.length > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
-                                    {cartItems.length}
-                                </span>
-                            )}
-                        </Link>
+
 
                         {user ? (
-                            <div className="relative">
-                                <button
-                                    onClick={() => {
-                                        console.log("Dropdown Clicked. Profile:", profile)
-                                        setIsProfileOpen(!isProfileOpen)
-                                    }}
-                                    className="flex items-center space-x-2 p-2 hover:bg-slate-100 rounded-full transition-colors focus:outline-none"
-                                >
-                                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold border border-blue-200">
-                                        {profile?.full_name?.charAt(0).toUpperCase() || <User className="w-5 h-5" />}
-                                    </div>
-                                </button>
-
-                                {/* Dropdown */}
-                                {isProfileOpen && (
-                                    <>
-                                        {/* Click outside to close */}
-                                        <div className="fixed inset-0 z-10" onClick={() => setIsProfileOpen(false)}></div>
-
-                                        <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-100">
-                                            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-                                                <p className="text-sm font-bold text-slate-800 truncate">{profile?.full_name}</p>
-                                                <p className="text-xs text-slate-500 truncate">{user.email}</p>
-                                            </div>
-                                            <div className="py-1">
-                                                {profile?.role === 'vendor' && (
-                                                    <Link
-                                                        to="/vendor/dashboard"
-                                                        className="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700"
-                                                        onClick={() => setIsProfileOpen(false)}
-                                                    >
-                                                        Vendor Dashboard
-                                                    </Link>
-                                                )}
-                                                {profile?.role === 'admin' && (
-                                                    <Link
-                                                        to="/admin/dashboard"
-                                                        className="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700"
-                                                        onClick={() => setIsProfileOpen(false)}
-                                                    >
-                                                        Admin Dashboard
-                                                    </Link>
-                                                )}
-                                            </div>
-                                            <div className="border-t border-slate-100 py-1">
-                                                <button
-                                                    onClick={handleSignOut}
-                                                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center font-medium"
-                                                >
-                                                    <LogOut className="w-4 h-4 mr-2" /> Sign Out
-                                                </button>
-                                            </div>
+                            <>
+                                <Link to="/cart" className="relative p-2 hover:bg-slate-100 rounded-full transition-colors">
+                                    <ShoppingCart className="w-6 h-6 text-slate-700" />
+                                    {cartItems.length > 0 && (
+                                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                                            {cartItems.length}
+                                        </span>
+                                    )}
+                                </Link>
+                                <div className="relative">
+                                    <button
+                                        onClick={() => {
+                                            console.log("Dropdown Clicked. Profile:", profile)
+                                            setIsProfileOpen(!isProfileOpen)
+                                        }}
+                                        className="flex items-center space-x-2 p-2 hover:bg-slate-100 rounded-full transition-colors focus:outline-none"
+                                    >
+                                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold border border-blue-200">
+                                            {profile?.full_name?.charAt(0).toUpperCase() || <User className="w-5 h-5" />}
                                         </div>
-                                    </>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="flex items-center space-x-2">
-                                <Link to="/login" className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors">
-                                    Login
-                                </Link>
-                                <Link to="/signup" className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg">
-                                    Sign Up
-                                </Link>
-                            </div>
+                                    </button>
+
+                                    {/* Dropdown */}
+                                    {isProfileOpen && (
+                                        <>
+                                            {/* Click outside to close */}
+                                            <div className="fixed inset-0 z-10" onClick={() => setIsProfileOpen(false)}></div>
+
+                                            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-100">
+                                                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
+                                                    <p className="text-sm font-bold text-slate-800 truncate">{profile?.full_name}</p>
+                                                    <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                                                </div>
+                                                <div className="py-1">
+                                                    {profile?.role === 'vendor' && (
+                                                        <Link
+                                                            to="/vendor/dashboard"
+                                                            className="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                                                            onClick={() => setIsProfileOpen(false)}
+                                                        >
+                                                            Vendor Dashboard
+                                                        </Link>
+                                                    )}
+                                                    {profile?.role === 'admin' && (
+                                                        <Link
+                                                            to="/admin/dashboard"
+                                                            className="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                                                            onClick={() => setIsProfileOpen(false)}
+                                                        >
+                                                            Admin Dashboard
+                                                        </Link>
+                                                    )}
+                                                </div>
+                                                <div className="border-t border-slate-100 py-1">
+                                                    <button
+                                                        onClick={handleSignOut}
+                                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center font-medium"
+                                                    >
+                                                        <LogOut className="w-4 h-4 mr-2" /> Sign Out
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                                </>
+                                ) : (
+                                <div className="flex items-center space-x-2">
+                                    <Link to="/login" className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors">
+                                        Login
+                                    </Link>
+                                    <Link to="/signup" className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg">
+                                        Sign Up
+                                    </Link>
+                                </div>
                         )}
 
-                        {/* Mobile Menu Button */}
-                        <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                            <Menu className="w-6 h-6" />
-                        </button>
+                                {/* Mobile Menu Button */}
+                                <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                                    <Menu className="w-6 h-6" />
+                                </button>
+                            </div>
                     </div>
-                </div>
             </header>
 
             {/* Mobile Nav */}

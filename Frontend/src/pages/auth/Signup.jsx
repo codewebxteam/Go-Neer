@@ -8,7 +8,7 @@ export default function Signup() {
     const navigate = useNavigate()
     const { signup } = useAuth()
     const [loading, setLoading] = useState(false)
-    const [role, setRole] = useState('user')
+    const [role, setRole] = useState('user');
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
@@ -23,7 +23,9 @@ export default function Signup() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-
+        if (formData.password.length < 6) {
+            return toast.error("Password must be at least 6 characters long");
+        }
         if (formData.password !== formData.confirmPassword) {
             return toast.error("Passwords do not match")
         }
@@ -31,12 +33,14 @@ export default function Signup() {
         setLoading(true)
 
         try {
-            const { user, error } = await signup(
-                formData.email.trim(),
-                formData.password,
-                formData.fullName.trim(),
-                role
-            )
+            console.log("signup intialize");
+            const { error } = await signup({
+                email: formData.email.trim(),
+                password: formData.password,
+                fullName: formData.fullName.trim(),
+                phone: formData.phone.trim(),
+                role: role
+            });
 
             if (error) throw error
 
@@ -143,7 +147,7 @@ export default function Signup() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Password </label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
                                 <input
