@@ -11,7 +11,8 @@ import {
   Loader2,
   CreditCard,
 } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+// NOTE: do not remove BELOW 👇 motion package import otherwise it will be break UI
+import { motion, AnimatePresence } from "framer-motion";
 import { clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
