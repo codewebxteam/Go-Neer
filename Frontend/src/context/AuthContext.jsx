@@ -1,5 +1,14 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { MOCK_USERS, MOCK_PROFILES } from '../data/mockData'
+import { auth, db } from '../firebase/config'
+import {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut as firebaseSignOut,
+    onAuthStateChanged
+} from 'firebase/auth'
+import { doc, setDoc, getDoc } from 'firebase/firestore'
+
+import { serverTimestamp } from "firebase/firestore";
 
 const AuthContext = createContext({})
 
@@ -11,90 +20,107 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        // Simulate checking for a persisted session (e.g., from localStorage)
-        const storedUser = localStorage.getItem('mock_user')
-        if (storedUser) {
-            try {
-                const parsedUser = JSON.parse(storedUser)
-                setUser(parsedUser)
-                // Find matching profile
-                const foundProfile = MOCK_PROFILES.find(p => p.id === parsedUser.id)
-                setProfile(foundProfile || null)
-            } catch (e) {
-                console.error("Failed to parse stored user", e)
-                localStorage.removeItem('mock_user')
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                setUser(currentUser)
+                // Fetch user profile/role from Firestore
+                try {
+                    const docRef = doc(db, "users", currentUser.uid)
+                    const docSnap = await getDoc(docRef)
+
+                    if (docSnap.exists()) {
+                        setProfile(docSnap.data())
+                    } else {
+                        // Handle case where auth exists but no profile doc
+                        console.warn("No profile found for user:", currentUser.uid)
+                        setProfile(null)
+                    }
+                } catch (error) {
+                    console.error("Error fetching profile:", error)
+                }
+            } else {
+                setUser(null)
+                setProfile(null)
             }
-        }
-        setLoading(false)
+            setLoading(false)
+        })
+
+        return () => unsubscribe()
     }, [])
 
     const login = async (email, password) => {
         setLoading(true)
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 800))
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password)
+            const loggedInUser = userCredential.user
 
-        const foundUser = MOCK_USERS.find(u => u.email === email && u.password === password)
+            // Fetch profile immediately to ensure state is updated before redirect
+            const docRef = doc(db, "users", loggedInUser.uid)
+            const docSnap = await getDoc(docRef)
 
-        if (foundUser) {
-            setUser(foundUser)
-            localStorage.setItem('mock_user', JSON.stringify(foundUser))
+            if (docSnap.exists()) {
+                setProfile(docSnap.data())
+            }
 
-            const foundProfile = MOCK_PROFILES.find(p => p.id === foundUser.id)
-            setProfile(foundProfile)
-
+            setUser(loggedInUser)
             setLoading(false)
-            return { user: foundUser, error: null }
-        } else {
+            return { user: loggedInUser, error: null }
+        } catch (error) {
             setLoading(false)
-            return { user: null, error: { message: 'Invalid credentials' } }
+            let errorMessage = 'Failed to login'
+            if (error.code === 'auth/invalid-credential') errorMessage = 'Invalid email or password'
+            if (error.code === 'auth/user-not-found') errorMessage = 'User not found'
+            if (error.code === 'auth/wrong-password') errorMessage = 'Incorrect password'
+
+            return { user: null, error: { message: errorMessage, code: error.code } }
         }
     }
 
     const signup = async (email, password, fullName, role, profileData = {}) => {
         setLoading(true)
-        await new Promise(resolve => setTimeout(resolve, 800))
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+            const newUser = userCredential.user
 
-        // Check if user already exists
-        if (MOCK_USERS.some(u => u.email === email)) {
+            const newProfile = {
+                id: newUser.uid,
+                email,
+                full_name: fullName,
+                role,
+                // createdAt: new Date(),
+                createdAt: serverTimestamp(),
+                ...profileData
+            }
+
+            // Create user document in Firestore
+            await setDoc(doc(db, "users", newUser.uid), newProfile)
+
+            setUser(newUser)
+            setProfile(newProfile)
+
             setLoading(false)
-            return { user: null, error: { message: 'User already exists' } }
+            return { user: newUser, error: null }
+        } catch (error) {
+            setLoading(false)
+            let errorMessage = 'Failed to signup'
+            if (error.code === 'auth/email-already-in-use') errorMessage = 'Email is already registered'
+            if (error.code === 'auth/weak-password') errorMessage = 'Password should be at least 6 characters'
+
+            return { user: null, error: { message: errorMessage, code: error.code } }
         }
-
-        const newUser = {
-            id: `user-${Date.now()}`,
-            email,
-            password,
-            user_metadata: { full_name: fullName },
-            role
-        }
-
-        const newProfile = {
-            id: newUser.id,
-            full_name: fullName,
-            role,
-            ...profileData   // 🔥 THIS IS WHERE LOCATION GOES
-        }
-
-        // Add to mock data (in-memory only for now, resets on reload unless we persist MOCK_USERS too, but this is fine for demo)
-        MOCK_USERS.push(newUser)
-        MOCK_PROFILES.push(newProfile)
-
-        // Auto login
-        setUser(newUser)
-        setProfile(newProfile)
-        localStorage.setItem('mock_user', JSON.stringify(newUser))
-
-        setLoading(false)
-        return { user: newUser, error: null }
     }
 
     const signOut = async () => {
         setLoading(true)
-        await new Promise(resolve => setTimeout(resolve, 500))
-        setUser(null)
-        setProfile(null)
-        localStorage.removeItem('mock_user')
-        setLoading(false)
+        try {
+            await firebaseSignOut(auth)
+            setUser(null)
+            setProfile(null)
+        } catch (error) {
+            console.error("Error signing out:", error)
+        } finally {
+            setLoading(false)
+        }
     }
 
     const value = {
@@ -110,7 +136,7 @@ export const AuthProvider = ({ children }) => {
         return (
             <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-50">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-                <p className="text-slate-400 text-sm">Loading Mock Experience...</p>
+                <p className="text-slate-400 text-sm">Loading...</p>
             </div>
         )
     }

@@ -331,7 +331,7 @@ export default function Signup() {
                         </div>
                       </motion.div>
                     ) : (
-                      <InputField field={field} config={config} formData={formData} handleChange={handleChange}/>
+                      <InputField field={field} config={config} formData={formData} handleChange={handleChange} />
                     )}
                   </div>
                 )
