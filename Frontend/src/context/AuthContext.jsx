@@ -1,149 +1,140 @@
-import { createContext, useContext, useEffect, useState } from 'react'
-import { auth, db } from '../firebase/config'
+import { createContext, useContext, useEffect, useState } from "react";
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
+    onAuthStateChanged,
+    updateProfile,
     signOut as firebaseSignOut,
-    onAuthStateChanged
-} from 'firebase/auth'
-import { doc, setDoc, getDoc } from 'firebase/firestore'
+} from "firebase/auth";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "../config/firebase";
 
-import { serverTimestamp } from "firebase/firestore";
-
-const AuthContext = createContext({})
-
-export const useAuth = () => useContext(AuthContext)
+const AuthContext = createContext(null);
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null)
-    const [profile, setProfile] = useState(null)
-    const [loading, setLoading] = useState(true)
+    const [user, setUser] = useState(null);      // Firebase Auth user
+    const [profile, setProfile] = useState(null); // Firestore profile
+    const [loading, setLoading] = useState(true);
 
+    // 🔁 Load profile by role
+    const loadUserProfile = async (uid) => {
+        const collections = ["users", "vendors", "admins"];
+        for (const col of collections) {
+            const ref = doc(db, col, uid);
+            const snap = await getDoc(ref);
+            if (snap.exists()) {
+                setProfile({ id: uid, ...snap.data() });
+                return;
+            }
+        }
+        setProfile(null);
+    };
+
+    // 🔄 Monitor Auth State
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
-                setUser(currentUser)
-                // Fetch user profile/role from Firestore
-                try {
-                    const docRef = doc(db, "users", currentUser.uid)
-                    const docSnap = await getDoc(docRef)
-
-                    if (docSnap.exists()) {
-                        setProfile(docSnap.data())
-                    } else {
-                        // Handle case where auth exists but no profile doc
-                        console.warn("No profile found for user:", currentUser.uid)
-                        setProfile(null)
-                    }
-                } catch (error) {
-                    console.error("Error fetching profile:", error)
-                }
+                setUser(currentUser);
+                await loadUserProfile(currentUser.uid);
             } else {
-                setUser(null)
-                setProfile(null)
+                setUser(null);
+                setProfile(null);
             }
-            setLoading(false)
-        })
+            setLoading(false);
+        });
 
-        return () => unsubscribe()
-    }, [])
+        return unsubscribe;
+    }, []);
 
+    // 🔐 LOGIN
     const login = async (email, password) => {
-        setLoading(true)
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password)
-            const loggedInUser = userCredential.user
+            setLoading(true);
+            const res = await signInWithEmailAndPassword(auth, email, password);
+            setUser(res.user);
+            await loadUserProfile(res.user.uid);
+            return { user: res.user, error: null };
+        } catch (error) {
+            console.error("Login failed:", error);
+            return { user: null, error };
+        } finally {
+            setLoading(false);
+        }
+    };
 
-            // Fetch profile immediately to ensure state is updated before redirect
-            const docRef = doc(db, "users", loggedInUser.uid)
-            const docSnap = await getDoc(docRef)
+    // 🆕 SIGNUP
+    const signup = async ({ email, password, fullName, phone, role }) => {
+        try {
+            setLoading(true);
 
-            if (docSnap.exists()) {
-                setProfile(docSnap.data())
+            // 🔹 Validate required fields
+            if (!email || !password || !fullName || !phone || !role) {
+                throw new Error("All signup fields are required");
             }
 
-            setUser(loggedInUser)
-            setLoading(false)
-            return { user: loggedInUser, error: null }
-        } catch (error) {
-            setLoading(false)
-            let errorMessage = 'Failed to login'
-            if (error.code === 'auth/invalid-credential') errorMessage = 'Invalid email or password'
-            if (error.code === 'auth/user-not-found') errorMessage = 'User not found'
-            if (error.code === 'auth/wrong-password') errorMessage = 'Incorrect password'
+            // 🔹 Firebase Auth user
+            const res = await createUserWithEmailAndPassword(auth, email, password);
+            await updateProfile(res.user, { displayName: fullName });
 
-            return { user: null, error: { message: errorMessage, code: error.code } }
-        }
-    }
+            // 🔹 Firestore collection
+            const collectionName =
+                role === "vendor"
+                    ? "vendors"
+                    : role === "admin"
+                        ? "admins"
+                        : "users";
 
-    const signup = async (email, password, fullName, role, profileData = {}) => {
-        setLoading(true)
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-            const newUser = userCredential.user
-
-            const newProfile = {
-                id: newUser.uid,
+            // 🔹 Profile data
+            const profileData = {
+                id: res.user.uid,
                 email,
                 full_name: fullName,
+                phone,
                 role,
-                // createdAt: new Date(),
-                createdAt: serverTimestamp(),
-                ...profileData
-            }
+                created_at: serverTimestamp(),
+            };
 
-            // Create user document in Firestore
-            await setDoc(doc(db, "users", newUser.uid), newProfile)
 
-            setUser(newUser)
-            setProfile(newProfile)
+            await setDoc(doc(db, collectionName, res.user.uid), profileData);
 
-            setLoading(false)
-            return { user: newUser, error: null }
+            // 🔹 Update state
+            setUser(res.user);
+            setProfile(profileData);
+
+            console.log("Signup complete:", email, "Collection:", collectionName);
+            return { user: res.user, error: null };
         } catch (error) {
-            setLoading(false)
-            let errorMessage = 'Failed to signup'
-            if (error.code === 'auth/email-already-in-use') errorMessage = 'Email is already registered'
-            if (error.code === 'auth/weak-password') errorMessage = 'Password should be at least 6 characters'
-
-            return { user: null, error: { message: errorMessage, code: error.code } }
-        }
-    }
-
-    const signOut = async () => {
-        setLoading(true)
-        try {
-            await firebaseSignOut(auth)
-            setUser(null)
-            setProfile(null)
-        } catch (error) {
-            console.error("Error signing out:", error)
+            console.error("Signup failed:", error);
+            return { user: null, error };
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }
+    };
 
-    const value = {
-        user,
-        profile,
-        loading,
-        login,
-        signup,
-        signOut,
-    }
+    // 🚪 LOGOUT
+    const signOut = async () => {
+        try {
+            setLoading(true);
+            await firebaseSignOut(auth);
+            setUser(null);
+            setProfile(null);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    const value = { user, profile, loading, login, signup, signOut };
+
+    // ⏳ Loading screen
     if (loading) {
         return (
-            <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-                <p className="text-slate-400 text-sm">Loading...</p>
+            <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mr-3" />
+                <p className="text-slate-400 text-sm">Checking authentication...</p>
             </div>
-        )
+        );
     }
 
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    )
-}
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
