@@ -186,6 +186,18 @@ export default function Home() {
                         </p>
                     </motion.div>
 
+                    {/* Product Search Link - Moved to Top */}
+                    <div className="mb-8 text-center">
+                        <p className="text-blue-100 mb-3">Search by product name</p>
+                        <Link
+                            to="/products"
+                            className="inline-flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-blue-900 px-8 py-3 rounded-full font-bold shadow-lg transition-all duration-300"
+                        >
+                            <Search className="w-5 h-5" />
+                            Search Products
+                        </Link>
+                    </div>
+
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -212,6 +224,9 @@ export default function Home() {
                             Find Water <ArrowRight className="ml-2 w-4 h-4" />
                         </motion.button>
                     </motion.div>
+
+                    {/* Or Text */}
+                    <p className="text-blue-100 mt-6">Or find vendors by location</p>
                 </div>
             </section>
 

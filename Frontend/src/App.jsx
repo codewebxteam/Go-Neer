@@ -15,6 +15,8 @@ import Contact from './pages/Contact'
 import VendorDashboard from './pages/vendor/Dashboard'
 import AdminDashboard from './pages/admin/Dashboard'
 import VendorMenu from './pages/user/VendorMenu'
+import Products from './pages/user/Products'
+import ProductDetail from './pages/user/ProductDetail'
 import Cart from './pages/user/Cart'
 import Checkout from './pages/user/Checkout'
 import MyOrders from './pages/user/MyOrders'
@@ -27,6 +29,7 @@ function App() {
         <Routes>
           <Route path="/" element={<MainLayout />}>
             <Route index element={<Home />} />
+            <Route path="products" element={<Products />} />
             <Route path="login" element={<Login />} />
             <Route path="signup" element={<Signup />} />
             <Route path="forgot-password" element={<ForgotPassword />} />
@@ -52,6 +55,7 @@ function App() {
             } />
             
             <Route path="vendor/:id" element={<VendorMenu />} />
+            <Route path="product/:productId" element={<ProductDetail />} />
 
             <Route path="admin/dashboard" element={
               <ProtectedRoute allowedRoles={['admin']}>
