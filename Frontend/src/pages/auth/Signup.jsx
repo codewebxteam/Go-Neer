@@ -1,125 +1,97 @@
+'use client';
+
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
 import { toast } from "react-toastify"
-import {
-  User,
-  Store,
-  Mail,
-  Lock,
-  Phone,
-  Loader2,
-  CreditCard,
-} from "lucide-react"
+import { User, Store, Mail, Lock, Phone, CreditCard, MapPin, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { geocodeAddress } from "../../services/geocodingService"
+import { createVendor } from "../../services/vendorService"
+
+/* ================= CONFIG ================= */
+
+const fieldConfig = {
+  name: { label: "Full Name", type: "text", placeholder: "John Doe", icon: User },
+  shopName: { label: "Shop Name", type: "text", placeholder: "ABC Store", icon: Store },
+  email: { label: "Email Address", type: "email", placeholder: "you@example.com", icon: Mail },
+  phone: { label: "Phone Number", type: "tel", placeholder: "9876543210", icon: Phone },
+  location: {
+    label: "Location",
+    type: "composite",
+    fields: {
+      pincode: { label: "Pincode", type: "text", placeholder: "PIN Code" },
+      city: { label: "City", type: "text", placeholder: "City", disabled: true },
+      street: { label: "Street Address", type: "text", placeholder: "House no, Street, Area" }
+    }
+  },
+  gstin: { label: "GSTIN", type: "text", placeholder: "22AAAAA0000A1Z5", icon: CreditCard },
+  password: { label: "Password", type: "password", placeholder: "••••••••", icon: Lock },
+  confirmPassword: { label: "Confirm Password", type: "password", placeholder: "••••••••", icon: Lock }
+}
+
+const fieldsByRole = {
+  user: ["name", "email", "phone", "password", "confirmPassword"],
+  vendor: ["shopName", "email", "phone", "location", "gstin", "password", "confirmPassword"]
+}
 
 function cn(...inputs) {
   return twMerge(clsx(inputs))
 }
 
-/* ================= CONFIG ================= */
+const initialFormData = Object.keys(fieldConfig).reduce((acc, key) => {
+  acc[key] =
+    fieldConfig[key].type === "composite"
+      ? { pincode: "", city: "", street: "" }
+      : ""
+  return acc
+}, {})
 
-const fieldConfig = {
-  name: {
-    label: "Full Name",
-    type: "text",
-    icon: User,
-    placeholder: "John Doe",
-  },
-  shopName: {
-    label: "Shop Name",
-    type: "text",
-    icon: Store,
-    placeholder: "ABC Store",
-  },
-  email: {
-    label: "Email Address",
-    type: "email",
-    icon: Mail,
-    placeholder: "you@example.com",
-  },
-  phone: {
-    label: "Phone Number",
-    type: "tel",
-    icon: Phone,
-    placeholder: "9876543210",
-  },
-  gstin: {
-    label: "GSTIN",
-    type: "text",
-    icon: CreditCard,
-    placeholder: "29ABCDE1234F1Z7",
-  },
-  password: {
-    label: "Password",
-    type: "password",
-    icon: Lock,
-    placeholder: "••••••••",
-  },
-  confirmPassword: {
-    label: "Confirm Password",
-    type: "password",
-    icon: Lock,
-    placeholder: "••••••••",
-  },
-}
+/* ================= INPUT FIELD ================= */
 
-const fieldsByRole = {
-  user: ["name", "email", "phone", "password", "confirmPassword"],
-  vendor: [
-    "shopName",
-    "email",
-    "phone",
-    "gstin",
-    "password",
-    "confirmPassword",
-  ],
-}
-
-const initialFormData = {
-  name: "",
-  shopName: "",
-  email: "",
-  phone: "",
-  gstin: "",
-  password: "",
-  confirmPassword: "",
-  location: {
-    pincode: "",
-    city: "",
-    street: "",
-    cityEditable: false,
-  },
-}
-
-/* ================= INPUT ================= */
-
-const InputField = ({ field, config, formData, onChange }) => {
+const InputField = ({ field, config, formData, handleChange }) => {
   const Icon = config.icon
+
+  const getAutoComplete = () => {
+    if (config.type === 'password') return 'new-password'
+    if (config.type === 'email') return 'email'
+    if (config.type === 'tel') return 'tel'
+    return 'off'
+  }
+
   return (
-    <div>
-      <label className="text-xs font-semibold text-slate-500 uppercase">
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="relative"
+    >
+      <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase">
         {config.label}
       </label>
-      <div className="relative mt-1">
+
+      <div className="relative">
         {Icon && (
-          <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
         )}
+
         <input
           type={config.type}
           value={formData[field]}
+          onChange={(e) => handleChange(field, e.target.value)}
           placeholder={config.placeholder}
-          onChange={(e) => onChange(field, e.target.value)}
-          className={cn(
-            "w-full rounded-xl border bg-slate-50 py-2.5 px-4 text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 outline-none",
-            Icon && "pl-10"
-          )}
           required
+          autoComplete={getAutoComplete()}
+          className={cn(
+            "w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 outline-none focus:ring-2 focus:ring-blue-500/20",
+            Icon && "pl-11"
+          )}
         />
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -129,15 +101,20 @@ export default function Signup() {
   const navigate = useNavigate()
   const { signup } = useAuth()
 
-  const [role, setRole] = useState("user")
   const [loading, setLoading] = useState(false)
+  const [role, setRole] = useState("user")
   const [formData, setFormData] = useState(initialFormData)
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  /* ===== PINCODE → CITY AUTO / MANUAL ===== */
+  const handleStreetChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      location: { ...prev.location, street: value }
+    }))
+  }
 
   const handlePincodeChange = async (value) => {
     setFormData((prev) => ({
@@ -145,196 +122,315 @@ export default function Signup() {
       location: {
         ...prev.location,
         pincode: value,
-        city: "",
-        cityEditable: false,
-      },
+        city: value.length === 6 ? prev.location.city : ""
+      }
     }))
 
     if (value.length !== 6) return
 
     try {
-      const res = await fetch(
-        `https://api.postalpincode.in/pincode/${value}`
-      )
+      const res = await fetch(`https://api.postalpincode.in/pincode/${value}`)
       const data = await res.json()
 
       if (data[0]?.Status === "Success") {
         const city = data[0].PostOffice[0].District
         setFormData((prev) => ({
           ...prev,
-          location: { ...prev.location, city },
+          location: { ...prev.location, city }
         }))
-      } else {
-        throw new Error()
       }
     } catch {
-      setFormData((prev) => ({
-        ...prev,
-        location: { ...prev.location, cityEditable: true },
-      }))
+      console.error("Pincode lookup failed")
     }
   }
 
-  /* ===== SUBMIT ===== */
+  const handleRoleChange = (newRole) => {
+    if (newRole === role) return
+    setRole(newRole)
+    setFormData(initialFormData)
+  }
 
+  // Form Submission
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setLoading(true)
+
+    if (formData.password.length < 6) {
+      setLoading(false)
+      return toast.error("Password must be at least 6 characters long")
+    }
 
     if (formData.password !== formData.confirmPassword) {
+      setLoading(false)
       return toast.error("Passwords do not match")
     }
 
-    setLoading(true)
+    // Geocoding for vendors with fallback
+    let geo = null
 
-    try {
-      const fullName =
-        role === "user"
-          ? formData.name.trim()
-          : formData.shopName.trim()
-
-      const extraData =
-        role === "vendor"
-          ? {
-              shop_name: formData.shopName,
-              gstin: formData.gstin,
-              address: formData.location.street,
-              city: formData.location.city,
-              pincode: formData.location.pincode,
-              is_verified: false,
-            }
-          : {}
-
-      const { error } = await signup({
-        email: formData.email.trim(),
-        password: formData.password,
-        fullName,
-        phone: formData.phone,
-        role,
-        extraData,
-      })
-
-      if (error) throw error
-
-      toast.success("Account created successfully")
-      navigate(role === "vendor" ? "/vendor/dashboard" : "/")
-    } catch (err) {
-      toast.error(err.message || "Signup failed")
-    } finally {
-      setLoading(false)
+    if (role === "vendor") {
+      try {
+        geo = await geocodeAddress({
+          street: formData.location.street,
+          city: formData.location.city,
+          pincode: formData.location.pincode,
+        })
+      } catch (err) {
+        // Fallback: try with just city + pincode
+        try {
+          geo = await geocodeAddress({
+            street: "",
+            city: formData.location.city,
+            pincode: formData.location.pincode,
+          })
+          toast.info("Using city-level location. You can update later.")
+        } catch (fallbackErr) {
+          setLoading(false)
+          return toast.error("Unable to detect location. Please check address.")
+        }
+      }
     }
+
+    // Define fullName based on role
+    const fullName = role === "user" ? formData.name.trim() : formData.shopName.trim()
+
+    // Step 1: Create Firebase Auth user + base user document
+    const { user, error } = await signup({
+      email: formData.email.trim(),
+      password: formData.password,
+      fullName,
+      phone: formData.phone.trim(),
+      role,
+    })
+
+    // Handle signup failure
+    if (error || !user) {
+      setLoading(false)
+      return toast.error(error?.message || "Signup failed. Please try again.")
+    }
+
+    // Step 2: Create vendor document (only for vendors)
+    if (role === "vendor") {
+      try {
+        await createVendor(user.uid, {
+          email: formData.email.trim(),
+          full_name: formData.shopName.trim(),
+          phone: formData.phone.trim(),
+          shop_name: formData.shopName.trim(),
+          address: formData.location.street,
+          city: formData.location.city,
+          pincode: formData.location.pincode,
+          gstin: formData.gstin.trim(),
+          latitude: geo.latitude,
+          longitude: geo.longitude,
+        })
+      } catch (vendorErr) {
+        setLoading(false)
+        return toast.error("Account created but vendor profile failed. Contact support.")
+      }
+    }
+
+    setLoading(false)
+    toast.success("Account created successfully!")
+    navigate(role === "vendor" ? "/vendor/dashboard" : "/")
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-      <div className="w-full max-w-lg bg-white p-8 rounded-2xl shadow-xl">
-        <h2 className="text-3xl font-bold text-center mb-6">
-          Create Account
-        </h2>
+    <div className="flex bg-slate-50 min-h-[calc(100vh-64px)] overflow-hidden">
+      {/* Left Side */}
+      <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden bg-slate-900">
+        <motion.div
+          initial={{ scale: 1.1, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 1.5 }}
+          className="absolute inset-0"
+        >
+          <img
+            src="https://images.unsplash.com/photo-1548839140-29a749e1cf4d?q=80&w=1976&auto=format&fit=crop"
+            className="w-full h-full object-cover opacity-60 mix-blend-overlay"
+            alt="Water Background"
+          />
+          <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/90 via-indigo-900/40 to-slate-900/10" />
+        </motion.div>
 
-        {/* ROLE SWITCH */}
-        <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
-          {["user", "vendor"].map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => {
-                setRole(r)
-                setFormData(initialFormData)
-              }}
-              className={cn(
-                "flex-1 py-2 rounded-lg font-semibold transition",
-                role === r
-                  ? "bg-white shadow text-blue-600"
-                  : "text-slate-500"
-              )}
-            >
-              {r === "user" ? "User" : "Vendor"}
-            </button>
-          ))}
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <AnimatePresence>
-            {fieldsByRole[role].map((field) => (
-              <motion.div key={field} layout>
-                <InputField
-                  field={field}
-                  config={fieldConfig[field]}
-                  formData={formData}
-                  onChange={handleChange}
-                />
-              </motion.div>
-            ))}
-
-            {/* LOCATION (VENDOR ONLY) */}
-            {role === "vendor" && (
-              <motion.div layout className="space-y-3">
-                <input
-                  placeholder="Pincode"
-                  maxLength={6}
-                  value={formData.location.pincode}
-                  onChange={(e) =>
-                    handlePincodeChange(e.target.value)
-                  }
-                  className="w-full border rounded-lg px-3 py-2 placeholder:text-slate-400"
-                />
-
-                <input
-                  placeholder={
-                    formData.location.cityEditable
-                      ? "Enter City"
-                      : "City (auto detected)"
-                  }
-                  disabled={!formData.location.cityEditable}
-                  value={formData.location.city}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      location: {
-                        ...prev.location,
-                        city: e.target.value,
-                      },
-                    }))
-                  }
-                  className={cn(
-                    "w-full border rounded-lg px-3 py-2 placeholder:text-slate-400",
-                    !formData.location.cityEditable && "bg-slate-100"
-                  )}
-                />
-
-                <input
-                  placeholder="Street Address"
-                  value={formData.location.street}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      location: {
-                        ...prev.location,
-                        street: e.target.value,
-                      },
-                    }))
-                  }
-                  className="w-full border rounded-lg px-3 py-2 placeholder:text-slate-400"
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold flex justify-center"
+        <div className="relative z-10 flex flex-col justify-center p-16 text-white w-full">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
           >
-            {loading ? <Loader2 className="animate-spin" /> : "Create Account"}
-          </button>
-        </form>
+            <h1 className="text-5xl font-bold mb-6 leading-tight">
+              Join Us <br />
+              <span className="text-blue-400">Join the Revolution.</span>
+            </h1>
+            <p className="text-lg text-slate-300 max-w-md leading-relaxed">
+              Start your journey with Go-Neer today. Whether you are buying or selling,
+              we have got you covered.
+            </p>
+          </motion.div>
 
-        <p className="text-center text-sm mt-6">
-          Already have an account?{" "}
-          <Link to="/login" className="text-blue-600 font-bold">
-            Log in
-          </Link>
-        </p>
+          <div className="mt-12 flex items-center gap-4">
+            <div className="flex -space-x-3">
+              {[1, 2, 3, 4].map((i) => (
+                <img
+                  key={i}
+                  src={`https://i.pravatar.cc/100?img=${i + 10}`}
+                  className="w-10 h-10 rounded-full border-2 border-slate-900"
+                  alt="User"
+                />
+              ))}
+            </div>
+            <p className="text-sm font-medium text-slate-300">
+              Trusted by 10,000+ users
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Side (Form) */}
+      <div className="w-full lg:w-[55%] flex items-center justify-center p-6 sm:p-12 overflow-y-auto">
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-lg space-y-8"
+        >
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <h2 className="text-3xl font-bold text-slate-900">Create an Account</h2>
+            <p className="text-slate-500">Enter your details to get started</p>
+          </div>
+
+          {/* Role Switcher */}
+          <div className="bg-slate-100 p-1.5 rounded-2xl flex relative">
+            {["user", "vendor"].map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => handleRoleChange(r)}
+                className={cn(
+                  "flex-1 flex items-center justify-center py-2.5 text-sm font-semibold rounded-xl relative z-10 transition-colors capitalize",
+                  role === r ? "text-blue-700" : "text-slate-500 hover:text-slate-700"
+                )}
+              >
+                {role === r && (
+                  <motion.div
+                    layoutId="activeRole"
+                    className="absolute inset-0 bg-white rounded-xl shadow-sm border border-slate-200/60"
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                  />
+                )}
+                <span className="relative z-20 flex items-center gap-2">
+                  {r === "user" ? <User className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+                  {r} Account
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <AnimatePresence mode="popLayout">
+              {fieldsByRole[role].map((field) => {
+                const config = fieldConfig[field]
+
+                return (
+                  <div key={field}>
+                    {config.type === "composite" ? (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-100"
+                      >
+                        <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-blue-600" />
+                          Location Details
+                        </h3>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-slate-500 uppercase">
+                              Pincode
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.location.pincode}
+                              maxLength={6}
+                              onChange={(e) => handlePincodeChange(e.target.value)}
+                              autoComplete="postal-code"
+                              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none"
+                              required
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-slate-500 uppercase">
+                              City
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.location.city}
+                              disabled
+                              autoComplete="address-level2"
+                              className="w-full bg-slate-100 rounded-lg px-3 py-2 text-sm text-slate-500 cursor-not-allowed"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-slate-500 uppercase">
+                            Street / Bldg
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.location.street}
+                            onChange={(e) => handleStreetChange(e.target.value)}
+                            autoComplete="street-address"
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:border-blue-500 outline-none"
+                            required
+                          />
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <InputField
+                        field={field}
+                        config={config}
+                        formData={formData}
+                        handleChange={handleChange}
+                      />
+                    )}
+                  </div>
+                )
+              })}
+            </AnimatePresence>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold py-3.5 rounded-xl shadow-lg disabled:opacity-70 mt-8 flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Creating Account...
+                </>
+              ) : (
+                "Create Account"
+              )}
+            </motion.button>
+          </form>
+
+          {/* Footer */}
+          <p className="text-center text-slate-500 text-sm">
+            Already have an account?{" "}
+            <Link to="/login" className="text-blue-600 font-bold hover:underline">
+              Log in
+            </Link>
+          </p>
+        </motion.div>
       </div>
     </div>
   )

@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
 import { MapPin, Search, ArrowRight, Loader2, Droplets, Truck, ShieldCheck, Clock, Phone } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { getDocuments, addDocument } from '../../services/firestoreService'
+// import { getDocuments, addDocument } from '../../services/firestoreService'
 import VendorCard from '../../components/user/VendorCard'
 import VendorMap from '../../components/user/VendorMap'
+import { getVendors } from '../../services/vendorService'
 import { motion } from 'framer-motion'
-import { MOCK_VENDORS } from '../../data/mockData'
+// import { MOCK_VENDORS } from '../../data/mockData'
 
 export default function Home() {
     const [vendors, setVendors] = useState([])
@@ -15,36 +16,18 @@ export default function Home() {
     const [userLocation, setUserLocation] = useState(null)
 
     useEffect(() => {
-        // Set vendors to mock data immediately, then try to fetch from Firestore
         const fetchVendors = async () => {
             try {
-                setLoading(true)
-                
-                // Use mock data immediately while fetching
-                setVendors(MOCK_VENDORS)
-                setFilteredVendors(MOCK_VENDORS)
-                console.log('Using mock vendors:', MOCK_VENDORS.length)
-                
-                // Try to fetch from Firestore in background
-                try {
-                    const vendorsData = await getDocuments('vendors')
-                    console.log('Vendors fetched from Firestore:', vendorsData?.length || 0)
-                    
-                    if (vendorsData && vendorsData.length > 0) {
-                        setVendors(vendorsData)
-                        setFilteredVendors(vendorsData)
-                        console.log('Updated to Firestore data')
-                    }
-                } catch (firestoreError) {
-                    console.warn('Firestore read failed, using mock data:', firestoreError.message)
-                }
+            setLoading(true)
+            const data = await getVendors()
+            setVendors(data)
+            setFilteredVendors(data)
             } catch (error) {
-                console.error('Error in fetchVendors:', error)
-                // Fallback to mock data
-                setVendors(MOCK_VENDORS)
-                setFilteredVendors(MOCK_VENDORS)
+            console.error("Failed to fetch vendors:", error)
+            setVendors([])
+            setFilteredVendors([])
             } finally {
-                setLoading(false)
+            setLoading(false)
             }
         }
 

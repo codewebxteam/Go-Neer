@@ -13,11 +13,11 @@ const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // Firebase Auth user
-  const [profile, setProfile] = useState(null); // Firestore profile
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔁 Load profile by role
+  // Load profile by role
   const loadUserProfile = async (uid) => {
     const collections = ["users", "vendors"];
     for (const col of collections) {
@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
     setProfile(null);
   };
 
-  // 🔄 Monitor Auth State
+  // Monitor Auth State
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
-  // 🔐 LOGIN
+  // LOGIN
   const login = async (email, password) => {
     try {
       setLoading(true);
@@ -63,15 +63,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 🆕 SIGNUP
-  const signup = async ({
-    email,
-    password,
-    fullName,
-    phone,
-    role,
-    extraData = {},
-  }) => {
+  // SIGNUP - Only handles Firebase Auth + base user document
+  const signup = async ({ email, password, fullName, phone, role }) => {
     try {
       setLoading(true);
 
@@ -82,27 +75,20 @@ export const AuthProvider = ({ children }) => {
       const res = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(res.user, { displayName: fullName });
 
-      const collectionName = role === "vendor" ? "vendors" : "users";
-
-      const profileData = {
+      // Create base user document in "users" collection for ALL roles
+      const userData = {
         id: res.user.uid,
         email,
         full_name: fullName,
         phone,
         role,
-
-        // 🔥 DEFAULT SYSTEM FIELDS
-        rating: 0.5,
-        is_active: true,
-
         created_at: serverTimestamp(),
-        ...extraData,
       };
 
-      await setDoc(doc(db, collectionName, res.user.uid), profileData);
+      await setDoc(doc(db, "users", res.user.uid), userData);
 
       setUser(res.user);
-      setProfile(profileData);
+      setProfile(userData);
 
       return { user: res.user, error: null };
     } catch (error) {
@@ -112,7 +98,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 🚪 LOGOUT
+  // LOGOUT
   const signOut = async () => {
     try {
       setLoading(true);
@@ -125,16 +111,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const value = { user, profile, loading, login, signup, signOut };
-
-  // ⏳ Loading screen
-  if (loading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mr-3" />
-        <p className="text-slate-400 text-sm">Checking authentication...</p>
-      </div>
-    );
-  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

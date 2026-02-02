@@ -6,7 +6,8 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     const location = useLocation()
 
     if (loading) {
-        return <div className="flex justify-center items-center h-screen">Loading...</div>
+        // return <div className="flex justify-center items-center h-screen">Loading...</div>
+        console.log("Auth loading...")
     }
 
     if (!user) {
