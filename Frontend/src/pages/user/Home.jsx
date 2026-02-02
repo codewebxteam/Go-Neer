@@ -1,33 +1,39 @@
-import { Link } from 'react-router-dom'
-import { MapPin, Search, ArrowRight, Loader2, Droplets, Truck, ShieldCheck, Clock, Phone } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Search, ArrowRight, Loader2, Droplets, Truck, ShieldCheck, Clock, Phone, MapPin } from 'lucide-react'
 import { useEffect, useState } from 'react'
 // import { getDocuments, addDocument } from '../../services/firestoreService'
 import VendorCard from '../../components/user/VendorCard'
 import VendorMap from '../../components/user/VendorMap'
 import { getVendors } from '../../services/vendorService'
+import { MOCK_PRODUCTS } from '../../data/mockData'
 import { motion } from 'framer-motion'
 // import { MOCK_VENDORS } from '../../data/mockData'
 
 export default function Home() {
+    const navigate = useNavigate()
     const [vendors, setVendors] = useState([])
     const [loading, setLoading] = useState(true)
-    const [searchLocation, setSearchLocation] = useState('')
+    const [error, setError] = useState(null)
+    const [searchQuery, setSearchQuery] = useState('')
     const [filteredVendors, setFilteredVendors] = useState([])
     const [userLocation, setUserLocation] = useState(null)
 
     useEffect(() => {
         const fetchVendors = async () => {
             try {
-            setLoading(true)
-            const data = await getVendors()
-            setVendors(data)
-            setFilteredVendors(data)
+                setLoading(true)
+                setError(null)
+                const data = await getVendors()
+                console.log("Fetched vendors:", data)
+                setVendors(data || [])
+                setFilteredVendors(data || [])
             } catch (error) {
-            console.error("Failed to fetch vendors:", error)
-            setVendors([])
-            setFilteredVendors([])
+                console.error("Failed to fetch vendors:", error)
+                setError(error.message || "Failed to load vendors")
+                setVendors([])
+                setFilteredVendors([])
             } finally {
-            setLoading(false)
+                setLoading(false)
             }
         }
 
@@ -75,34 +81,18 @@ export default function Home() {
         setFilteredVendors(nearby)
     }
 
-    // Handle search by location (city/area)
-    const handleSearchChange = (e) => {
-        const value = e.target.value.toLowerCase().trim()
-        setSearchLocation(value)
-        
-        if (!value) {
-            setFilteredVendors(vendors)
-            console.log('Search cleared, showing all vendors:', vendors.length)
-            return
+    // Handle search - navigate to product results page
+    const handleSearch = (e) => {
+        e.preventDefault()
+        const query = searchQuery.trim()
+        if (query) {
+            navigate(`/search?q=${encodeURIComponent(query)}`)
         }
+    }
 
-        // Filter ONLY by city or area - location-based search
-        const filtered = vendors.filter(vendor => {
-            const city = vendor.city?.toLowerCase() || ''
-            const area = vendor.area?.toLowerCase() || ''
-            
-            // Match if the search term is found in city or area name
-            const matches = city.includes(value) || area.includes(value)
-            
-            if (matches) {
-                console.log('Match found:', vendor.shop_name, 'in', vendor.city)
-            }
-            
-            return matches
-        })
-        
-        console.log('Searching for location "' + value + '" found:', filtered.length, 'vendors')
-        setFilteredVendors(filtered)
+    // Handle search input change
+    const handleSearchChange = (e) => {
+        setSearchQuery(e.target.value)
     }
 
     const containerVariants = {
@@ -169,47 +159,30 @@ export default function Home() {
                         </p>
                     </motion.div>
 
-                    {/* Product Search Link - Moved to Top */}
-                    <div className="mb-8 text-center">
-                        <p className="text-blue-100 mb-3">Search by product name</p>
-                        <Link
-                            to="/products"
-                            className="inline-flex items-center gap-2 bg-cyan-400 hover:bg-cyan-300 text-blue-900 px-8 py-3 rounded-full font-bold shadow-lg transition-all duration-300"
-                        >
-                            <Search className="w-5 h-5" />
-                            Search Products
-                        </Link>
-                    </div>
-
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.3, duration: 0.5 }}
                         className="bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-full shadow-2xl max-w-xl mx-auto flex items-center"
                     >
-                        <MapPin className="ml-4 text-cyan-300 w-6 h-6 animate-bounce" />
+                        <Search className="ml-4 text-cyan-300 w-6 h-6" />
                         <input
                             type="text"
-                            placeholder="Enter your location to find vendors..."
-                            value={searchLocation}
+                            placeholder="Search by product name or location..."
+                            value={searchQuery}
                             onChange={handleSearchChange}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSearch(e)}
                             className="flex-grow p-4 bg-transparent outline-none text-white placeholder-blue-200/70 font-medium"
                         />
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => {
-                                getUserLocation()
-                                document.getElementById('vendors-grid').scrollIntoView({ behavior: 'smooth' })
-                            }}
+                            onClick={handleSearch}
                             className="bg-white text-blue-700 px-8 py-4 rounded-full font-bold shadow-lg flex items-center hover:bg-blue-50 transition-colors"
                         >
                             Find Water <ArrowRight className="ml-2 w-4 h-4" />
                         </motion.button>
                     </motion.div>
-
-                    {/* Or Text */}
-                    <p className="text-blue-100 mt-6">Or find vendors by location</p>
                 </div>
             </section>
 
@@ -250,15 +223,22 @@ export default function Home() {
             {/* Vendors Section */}
             <section id="vendors-grid" className="py-20 bg-slate-100/50">
                 <div className="container mx-auto px-4">
-                    {searchLocation ? (
+                    {searchQuery ? (
                         <div className="mb-12">
-                            <h2 className="text-3xl font-bold text-slate-900 mb-2">Vendors in "{searchLocation}"</h2>
+                            <h2 className="text-3xl font-bold text-slate-900 mb-2">Search Results for "{searchQuery}"</h2>
                             <p className="text-slate-500">Found {filteredVendors.length} vendors</p>
                         </div>
                     ) : (
                         <div className="mb-12">
                             <h2 className="text-3xl font-bold text-slate-900 mb-2">All Available Vendors</h2>
                             <p className="text-slate-500">{filteredVendors.length} vendors ready to serve you</p>
+                        </div>
+                    )}
+
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8 text-red-700">
+                            <p className="font-semibold">Error loading vendors:</p>
+                            <p className="text-sm mt-2">{error}</p>
                         </div>
                     )}
 
@@ -348,10 +328,13 @@ export default function Home() {
                             </div>
                         </>
                     ) : (
-                        <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
-                            <MapPin className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                            <h3 className="text-xl text-slate-600 font-bold mb-2">No Vendors Found</h3>
-                            <p className="text-slate-500">Try searching for a different location.</p>
+                        <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-300 shadow-sm">
+                            <MapPin className="w-16 h-16 text-slate-400 mx-auto mb-6" />
+                            <h3 className="text-2xl text-slate-700 font-bold mb-3">No Vendors Available Yet</h3>
+                            <p className="text-slate-500 mb-6">Vendors will appear here once they sign up. Check back soon!</p>
+                            <Link to="/signup" className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                Become a Vendor
+                            </Link>
                         </div>
                     )}
                 </div>

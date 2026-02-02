@@ -9,6 +9,10 @@ import { CartProvider } from './context/CartContext'
 import Home from './pages/user/Home'
 import Login from './pages/auth/Login'
 import Signup from './pages/auth/Signup'
+import About from './pages/About'
+import Contact from './pages/Contact'
+import ProductResults from './pages/user/ProductResults'
+import ProductDetail from './pages/user/ProductDetail'
 import VendorDashboard from './pages/vendor/Dashboard'
 import AdminDashboard from './pages/admin/Dashboard'
 import VendorMenu from './pages/user/VendorMenu'
@@ -26,6 +30,10 @@ function App() {
             <Route index element={<Home />} />
             <Route path="login" element={<Login />} />
             <Route path="signup" element={<Signup />} />
+            <Route path="about" element={<About />} />
+            <Route path="contact" element={<Contact />} />
+            <Route path="search" element={<ProductResults />} />
+            <Route path="product/:id" element={<ProductDetail />} />
             <Route path="vendor/:id" element={<VendorMenu />} />
             <Route path="cart" element={<Cart />} />
             <Route path="checkout" element={

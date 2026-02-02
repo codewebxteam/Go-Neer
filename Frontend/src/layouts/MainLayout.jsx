@@ -1,15 +1,21 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { ShoppingCart, User, LogOut, Menu } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function MainLayout() {
     const { user, signOut, profile } = useAuth()
     const { cartItems } = useCart()
     const navigate = useNavigate()
+    const location = useLocation()
     const [isProfileOpen, setIsProfileOpen] = useState(false)
     const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+    // Scroll to top when route changes
+    useEffect(() => {
+        window.scrollTo(0, 0)
+    }, [location.pathname])
 
     const handleSignOut = async (e) => {
         // Prevent event bubbling to avoid closing menu immediately if that interferes (though we close it manually)
@@ -37,6 +43,8 @@ export default function MainLayout() {
                         {user && (
                             <Link to="/orders" className="font-medium hover:text-blue-600 transition-colors">My Orders</Link>
                         )}
+                        <Link to="/about" className="font-medium hover:text-blue-600 transition-colors">About</Link>
+                        <Link to="/contact" className="font-medium hover:text-blue-600 transition-colors">Contact</Link>
                     </nav>
 
                     <div className="flex items-center space-x-4">
@@ -133,10 +141,11 @@ export default function MainLayout() {
             {isMenuOpen && (
                 <div className="md:hidden bg-white border-b border-slate-200 p-4 space-y-2">
                     <Link to="/" className="block py-2" onClick={() => setIsMenuOpen(false)}>Home</Link>
-                    <Link to="/vendors" className="block py-2" onClick={() => setIsMenuOpen(false)}>Vendors</Link>
                     {user && (
                         <Link to="/orders" className="block py-2" onClick={() => setIsMenuOpen(false)}>My Orders</Link>
                     )}
+                    <Link to="/about" className="block py-2" onClick={() => setIsMenuOpen(false)}>About</Link>
+                    <Link to="/contact" className="block py-2" onClick={() => setIsMenuOpen(false)}>Contact</Link>
                 </div>
             )}
 
