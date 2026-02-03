@@ -1,24 +1,26 @@
 import { Routes, Route } from 'react-router-dom'
+import { Suspense, lazy } from 'react'
 import MainLayout from './layouts/MainLayout'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
+import Loader from './components/common/Loader'
 
-// Pages
-import Home from './pages/user/Home'
-import Login from './pages/auth/Login'
-import Signup from './pages/auth/Signup'
-import About from './pages/About'
-import Contact from './pages/Contact'
-import ProductResults from './pages/user/ProductResults'
-import ProductDetail from './pages/user/ProductDetail'
-import VendorDashboard from './pages/vendor/Dashboard'
-import AdminDashboard from './pages/admin/Dashboard'
-import VendorMenu from './pages/user/VendorMenu'
-import Cart from './pages/user/Cart'
-import Checkout from './pages/user/Checkout'
-import MyOrders from './pages/user/MyOrders'
+// Lazy Loading Pages
+const Home = lazy(() => import('./pages/user/Home'))
+const Login = lazy(() => import('./pages/auth/Login'))
+const Signup = lazy(() => import('./pages/auth/Signup'))
+const About = lazy(() => import('./pages/About'))
+const Contact = lazy(() => import('./pages/Contact'))
+const ProductResults = lazy(() => import('./pages/user/ProductResults'))
+const ProductDetail = lazy(() => import('./pages/user/ProductDetail'))
+const VendorDashboard = lazy(() => import('./pages/vendor/Dashboard'))
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
+const VendorMenu = lazy(() => import('./pages/user/VendorMenu'))
+const Cart = lazy(() => import('./pages/user/Cart'))
+const Checkout = lazy(() => import('./pages/user/Checkout'))
+const MyOrders = lazy(() => import('./pages/user/MyOrders'))
 
 // Route Guards
 import ProtectedRoute from './components/common/ProtectedRoute'
@@ -28,82 +30,84 @@ function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <Routes>
-          <Route path="/" element={<MainLayout />}>
+        <Suspense fallback={<Loader />}>
+          <Routes>
+            <Route path="/" element={<MainLayout />}>
 
-            {/* PUBLIC */}
-            <Route index element={<Home />} />
+              {/* PUBLIC */}
+              <Route index element={<Home />} />
 
-            <Route
-              path="login"
-              element={
-                <PublicRoute>
-                  <Login />
-                </PublicRoute>
-              }
-            />
+              <Route
+                path="login"
+                element={
+                  <PublicRoute>
+                    <Login />
+                  </PublicRoute>
+                }
+              />
 
-            <Route
-              path="signup"
-              element={
-                <PublicRoute>
-                  <Signup />
-                </PublicRoute>
-              }
-            />
+              <Route
+                path="signup"
+                element={
+                  <PublicRoute>
+                    <Signup />
+                  </PublicRoute>
+                }
+              />
 
-            <Route path="about" element={<About />} />
-            <Route path="contact" element={<Contact />} />
-            <Route path="search" element={<ProductResults />} />
-            <Route path="product/:id" element={<ProductDetail />} />
-            <Route path="vendor/:id" element={<VendorMenu />} />
-            <Route path="cart" element={<Cart />} />
+              <Route path="about" element={<About />} />
+              <Route path="contact" element={<Contact />} />
+              <Route path="search" element={<ProductResults />} />
+              <Route path="product/:id" element={<ProductDetail />} />
+              <Route path="vendor/:id" element={<VendorMenu />} />
+              <Route path="cart" element={<Cart />} />
 
-            {/* PROTECTED */}
-            <Route
-              path="checkout"
-              element={
-                <ProtectedRoute allowedRoles={['user', 'vendor', 'admin']}>
-                  <Checkout />
-                </ProtectedRoute>
-              }
-            />
+              {/* PROTECTED */}
+              <Route
+                path="checkout"
+                element={
+                  <ProtectedRoute allowedRoles={['user', 'vendor', 'admin']}>
+                    <Checkout />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="orders"
-              element={
-                <ProtectedRoute allowedRoles={['user', 'vendor', 'admin']}>
-                  <MyOrders />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="orders"
+                element={
+                  <ProtectedRoute allowedRoles={['user', 'vendor', 'admin']}>
+                    <MyOrders />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="vendor/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['vendor']}>
-                  <VendorDashboard />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="vendor/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['vendor']}>
+                    <VendorDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="admin/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="admin/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* 404 */}
-            <Route
-              path="*"
-              element={<div className="p-10 text-center">Page Not Found</div>}
-            />
+              {/* 404 */}
+              <Route
+                path="*"
+                element={<div className="p-10 text-center">Page Not Found</div>}
+              />
 
-          </Route>
-        </Routes>
+            </Route>
+          </Routes>
+        </Suspense>
 
         <ToastContainer position="bottom-right" theme="colored" />
       </CartProvider>

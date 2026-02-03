@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react'
 import { getDocuments } from '../services/firestoreService'
 import { Loader2 } from 'lucide-react'
 
-/**
- * Example component showing how to fetch and display data from Firestore
- * This demonstrates the integration of Firebase Firestore in your app
- */
+
 export default function FirestoreExample() {
   const [vendors, setVendors] = useState([])
   const [loading, setLoading] = useState(true)

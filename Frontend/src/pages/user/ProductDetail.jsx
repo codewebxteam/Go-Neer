@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { MOCK_PRODUCTS, MOCK_VENDORS } from '../../data/mockData'
+// import { MOCK_PRODUCTS, MOCK_VENDORS } from '../../data/mockData'
+import { getProductById, getProductsByVendor } from '../../services/productService'
+import { getVendorById } from '../../services/vendorService'
 import { useCart } from '../../context/CartContext'
 import { ArrowLeft, Star, Clock, MapPin, Plus, ShoppingCart, Check, X, Minus, Trash2, Droplets } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -17,20 +19,34 @@ export default function ProductDetail() {
 
     useEffect(() => {
         const fetchData = async () => {
-            // Simulate Fetch
-            await new Promise(resolve => setTimeout(resolve, 500))
+            try {
+                // Fetch product by ID
+                const productData = await getProductById(id)
 
-            const foundProduct = MOCK_PRODUCTS.find(p => p.id === id)
-            if (foundProduct) {
-                setProduct(foundProduct)
-                // Find vendor for this product
-                const vendorForProduct = MOCK_VENDORS.find(v => v.id === foundProduct.vendor_id)
-                setVendor(vendorForProduct || MOCK_VENDORS[0])
-                // Get related products from same vendor
-                const related = MOCK_PRODUCTS.filter(p => (p.vendor_id === foundProduct.vendor_id || p.vendor_id === 'vendor-1') && p.id !== id)
-                setRelatedProducts(related)
+                if (productData) {
+                    setProduct(productData)
+
+                    // Fetch vendor for this product
+                    if (productData.vendor_id) {
+                        const vendorData = await getVendorById(productData.vendor_id)
+                        setVendor(vendorData)
+                    }
+
+                    // Get related products (same vendor or others, for now let's just show products from same vendor)
+                    // In a real app we might have a specific endpoint for related products
+                    if (productData.vendor_id) {
+                        const vendorProducts = await getProductsByVendor(productData.vendor_id)
+                        const related = vendorProducts.filter(p => p.id !== id).slice(0, 4)
+                        setRelatedProducts(related)
+                    }
+                } else {
+                    console.error("Product not found")
+                }
+            } catch (error) {
+                console.error("Error fetching product details:", error)
+            } finally {
+                setLoading(false)
             }
-            setLoading(false)
         }
 
         if (id) fetchData()
@@ -68,9 +84,9 @@ export default function ProductDetail() {
                         {/* Product Image */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                             <div>
-                                <img 
-                                    src={product.image_url} 
-                                    alt={product.name} 
+                                <img
+                                    src={product.image_url}
+                                    alt={product.name}
                                     className="w-full h-96 object-cover rounded-xl shadow-lg"
                                 />
                             </div>
@@ -137,11 +153,10 @@ export default function ProductDetail() {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={handleAddToCart}
-                                    className={`w-full font-bold py-4 rounded-xl transition-all flex items-center justify-center text-lg ${
-                                        isProductInCart
-                                            ? 'bg-green-500 text-white hover:bg-green-600'
-                                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                                    }`}
+                                    className={`w-full font-bold py-4 rounded-xl transition-all flex items-center justify-center text-lg ${isProductInCart
+                                        ? 'bg-green-500 text-white hover:bg-green-600'
+                                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                                        }`}
                                 >
                                     {isProductInCart ? (
                                         <>

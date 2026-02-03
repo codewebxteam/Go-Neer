@@ -8,12 +8,13 @@ import {
   Clock,
   Phone,
   MapPin,
+  Package,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import VendorMap from "../../components/user/VendorMap";
+import { useEffect, useState, Suspense, lazy } from "react";
+const VendorMap = lazy(() => import("../../components/user/VendorMap"));
 import { getVendors } from "../../services/vendorService";
 import { motion } from "framer-motion";
-import Loader from "../../components/common/Loader";
+// import Loader from "../../components/common/Loader"; // Removed blocking loader
 
 export default function Home() {
   const navigate = useNavigate();
@@ -29,8 +30,10 @@ export default function Home() {
       try {
         setLoading(true);
         setError(null);
+        // Artificial delay for testing skeleton (remove in production if needed)
+        // await new Promise(resolve => setTimeout(resolve, 1000)); 
         const data = await getVendors();
-        console.log("Fetched vendors:", data);
+        // console.log("Fetched vendors:", data);
         setVendors(data || []);
         setFilteredVendors(data || []);
       } catch (error) {
@@ -46,9 +49,7 @@ export default function Home() {
     fetchVendors();
   }, []);
 
-  if (loading) {
-    return <Loader />;
-  }
+  // Removed blocking check: if (loading) return <Loader />;
 
   // Get user's current location
   const getUserLocation = () => {
@@ -60,7 +61,7 @@ export default function Home() {
           handleLocationSearch(latitude, longitude);
         },
         (error) => {
-          console.log("Location access denied or unavailable");
+          console.warn("Location access denied or unavailable");
         },
       );
     }
@@ -74,9 +75,9 @@ export default function Home() {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return (R * c).toFixed(1);
   };
@@ -136,7 +137,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-64px)] pb-20 bg-slate-50">
-      {/* Hero Section */}
+      {/* Hero Section - This renders IMMEDIATELY now */}
       <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden">
         {/* Animated Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-blue-700 to-cyan-600">
@@ -204,7 +205,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Why Choose Us */}
+      {/* Why Choose Us - Static Content, Renders Immediately */}
       <section className="py-20 container mx-auto px-4">
         <div className="text-center mb-16">
           <span className="text-blue-600 font-bold tracking-wider uppercase text-sm bg-blue-50 px-3 py-1 rounded-full">
@@ -257,173 +258,199 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Vendors Section */}
+      {/* Vendors Section - Now uses Skeleton State instead of blocking */}
       <section id="vendors-grid" className="py-20 bg-slate-100/50">
         <div className="container mx-auto px-4">
-          {searchQuery ? (
-            <div className="mb-12">
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">
-                Search Results for "{searchQuery}"
-              </h2>
-              <p className="text-slate-500">
-                Found {filteredVendors.length} vendors
-              </p>
-            </div>
-          ) : (
-            <div className="mb-12">
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">
-                All Available Vendors
-              </h2>
-              <p className="text-slate-500">
-                {filteredVendors.length} vendors ready to serve you
-              </p>
-            </div>
-          )}
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8 text-red-700">
-              <p className="font-semibold">Error loading vendors:</p>
-              <p className="text-sm mt-2">{error}</p>
-            </div>
-          )}
 
           {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
-            </div>
-          ) : filteredVendors.length > 0 ? (
-            <>
-              {/* Image Gallery Section */}
-              <div className="mb-16">
-                <h3 className="text-2xl font-bold text-slate-900 mb-6">
-                  Vendor Images
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {filteredVendors.map((vendor) => (
-                    <Link
-                      key={vendor.id}
-                      to={`/vendor/${vendor.id}`}
-                      className="block"
-                    >
-                      <motion.div
-                        variants={itemVariants}
-                        className="relative group cursor-pointer rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 h-64"
-                      >
-                        <img
-                          src={vendor.image_url}
-                          alt={vendor.shop_name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 text-white">
-                          <h3 className="font-bold text-lg">
-                            {vendor.shop_name}
-                          </h3>
-                          <p className="text-sm text-gray-200">
-                            {vendor.address}
-                          </p>
-                        </div>
-                      </motion.div>
-                    </Link>
-                  ))}
-                </div>
+            /* SKELETON LOADING STATE */
+            <div className="space-y-8 animate-pulse">
+              <div className="h-8 bg-slate-200 rounded-lg w-1/3 mb-12"></div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-16">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="h-64 bg-slate-200 rounded-xl"></div>
+                ))}
               </div>
 
-              {/* Map and Details Section */}
-              <div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-6">
-                  Nearby Vendors Map & Details
-                </h3>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* Vendor List with Details */}
-                  <div className="lg:col-span-1">
-                    <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-1 space-y-4">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-24 bg-slate-200 rounded-xl"></div>
+                  ))}
+                </div>
+                <div className="lg:col-span-2 h-96 bg-slate-200 rounded-xl"></div>
+              </div>
+            </div>
+
+          ) : (
+            /* ACTUAL CONTENT */
+            <>
+              {searchQuery ? (
+                <div className="mb-12">
+                  <h2 className="text-3xl font-bold text-slate-900 mb-2">
+                    Search Results for "{searchQuery}"
+                  </h2>
+                  <p className="text-slate-500">
+                    Found {filteredVendors.length} vendors
+                  </p>
+                </div>
+              ) : (
+                <div className="mb-12">
+                  <h2 className="text-3xl font-bold text-slate-900 mb-2">
+                    All Available Vendors
+                  </h2>
+                  <p className="text-slate-500">
+                    {filteredVendors.length} vendors ready to serve you
+                  </p>
+                </div>
+              )}
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8 text-red-700">
+                  <p className="font-semibold">Error loading vendors:</p>
+                  <p className="text-sm mt-2">{error}</p>
+                </div>
+              )}
+
+              {filteredVendors.length > 0 ? (
+                <>
+                  {/* Image Gallery Section */}
+                  <div className="mb-16">
+                    <h3 className="text-2xl font-bold text-slate-900 mb-6">
+                      Vendor Images
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {filteredVendors.map((vendor) => (
                         <Link
                           key={vendor.id}
                           to={`/vendor/${vendor.id}`}
-                          className="block hover:no-underline"
+                          className="block"
                         >
                           <motion.div
                             variants={itemVariants}
-                            className="bg-white p-4 rounded-xl shadow-md border border-slate-100 hover:shadow-lg transition-all cursor-pointer"
+                            className="relative group cursor-pointer rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 h-64"
                           >
-                            <div className="flex gap-3 mb-3">
-                              <img
-                                src={vendor.image_url}
-                                alt={vendor.shop_name}
-                                className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                              />
-                              <div className="flex-grow">
-                                <h4 className="font-bold text-slate-900 text-sm">
-                                  {vendor.shop_name}
-                                </h4>
-                                <p className="text-xs text-slate-500">
-                                  {vendor.city}
-                                </p>
-                                <div className="flex items-center gap-1 mt-1">
-                                  <span className="text-yellow-500 text-xs">
-                                    ★
-                                  </span>
-                                  <span className="font-bold text-xs text-slate-700">
-                                    {vendor.rating}
-                                  </span>
-                                </div>
-                              </div>
+                            <img
+                              src={vendor.image_url}
+                              alt={vendor.shop_name}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 text-white">
+                              <h3 className="font-bold text-lg">
+                                {vendor.shop_name}
+                              </h3>
+                              <p className="text-sm text-gray-200">
+                                {vendor.address}
+                              </p>
                             </div>
-                            <div className="space-y-2 text-xs text-slate-600">
-                              <div className="flex items-start gap-2">
-                                <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0 text-blue-600" />
-                                <span>{vendor.address}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Clock className="w-3 h-3 flex-shrink-0 text-blue-600" />
-                                <span>
-                                  {vendor.delivery_time || "15-30 min"}
-                                </span>
-                              </div>
-                            </div>
-                            <span
-                              className={`inline-block mt-3 px-2 py-1 rounded-full text-xs font-bold ${vendor.is_open ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
-                            >
-                              {vendor.is_open ? "Open Now" : "Closed"}
-                            </span>
                           </motion.div>
                         </Link>
                       ))}
                     </div>
                   </div>
 
-                  {/* Map Section */}
-                  <div className="lg:col-span-2 h-96">
-                    <VendorMap
-                      vendors={filteredVendors}
-                      userLocation={userLocation}
-                    />
+                  {/* Map and Details Section */}
+                  <div>
+                    <h3 className="text-2xl font-bold text-slate-900 mb-6">
+                      Nearby Vendors Map & Details
+                    </h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                      {/* Vendor List with Details */}
+                      <div className="lg:col-span-1">
+                        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                          {filteredVendors.map((vendor) => (
+                            <Link
+                              key={vendor.id}
+                              to={`/vendor/${vendor.id}`}
+                              className="block hover:no-underline"
+                            >
+                              <motion.div
+                                variants={itemVariants}
+                                className="bg-white p-4 rounded-xl shadow-md border border-slate-100 hover:shadow-lg transition-all cursor-pointer"
+                              >
+                                <div className="flex gap-3 mb-3">
+                                  <img
+                                    src={vendor.image_url}
+                                    alt={vendor.shop_name}
+                                    className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                                  />
+                                  <div className="flex-grow">
+                                    <h4 className="font-bold text-slate-900 text-sm">
+                                      {vendor.shop_name}
+                                    </h4>
+                                    <p className="text-xs text-slate-500">
+                                      {vendor.city}
+                                    </p>
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <span className="text-yellow-500 text-xs">
+                                        ★
+                                      </span>
+                                      <span className="font-bold text-xs text-slate-700">
+                                        {vendor.rating}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="space-y-2 text-xs text-slate-600">
+                                  <div className="flex items-start gap-2">
+                                    <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0 text-blue-600" />
+                                    <span>{vendor.address}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="w-3 h-3 flex-shrink-0 text-blue-600" />
+                                    <span>
+                                      {vendor.delivery_time || "15-30 min"}
+                                    </span>
+                                  </div>
+                                </div>
+                                <span
+                                  className={`inline-block mt-3 px-2 py-1 rounded-full text-xs font-bold ${vendor.is_open ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+                                >
+                                  {vendor.is_open ? "Open Now" : "Closed"}
+                                </span>
+                              </motion.div>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Map Section */}
+                      <div className="lg:col-span-2 h-96">
+                        <Suspense fallback={<div className="w-full h-full bg-slate-100 animate-pulse rounded-xl flex items-center justify-center text-slate-400">Loading Map...</div>}>
+                          <VendorMap
+                            vendors={filteredVendors}
+                            userLocation={userLocation}
+                          />
+                        </Suspense>
+                      </div>
+                    </div>
                   </div>
+                </>
+              ) : (
+                <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-300 shadow-sm">
+                  <MapPin className="w-16 h-16 text-slate-400 mx-auto mb-6" />
+                  <h3 className="text-2xl text-slate-700 font-bold mb-3">
+                    No Vendors Available Yet
+                  </h3>
+                  <p className="text-slate-500 mb-6">
+                    Vendors will appear here once they sign up. Check back soon!
+                  </p>
+                  <Link
+                    to="/signup"
+                    className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Become a Vendor
+                  </Link>
                 </div>
-              </div>
+              )}
             </>
-          ) : (
-            <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-300 shadow-sm">
-              <MapPin className="w-16 h-16 text-slate-400 mx-auto mb-6" />
-              <h3 className="text-2xl text-slate-700 font-bold mb-3">
-                No Vendors Available Yet
-              </h3>
-              <p className="text-slate-500 mb-6">
-                Vendors will appear here once they sign up. Check back soon!
-              </p>
-              <Link
-                to="/signup"
-                className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Become a Vendor
-              </Link>
-            </div>
           )}
+
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* How It Works - Static Content, Renders Immediately */}
       <section className="py-20 container mx-auto px-4">
         <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-3xl p-12 text-white text-center relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>

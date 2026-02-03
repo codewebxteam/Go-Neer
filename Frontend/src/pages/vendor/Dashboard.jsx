@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { MOCK_PRODUCTS, MOCK_ORDERS } from '../../data/mockData'
+// import { MOCK_PRODUCTS, MOCK_ORDERS } from '../../data/mockData'
+import { getProductsByVendor, deleteProduct } from '../../services/productService'
+import { getOrdersByVendor, updateOrderStatus as updateOrderStatusService } from '../../services/orderService'
 import { Plus, Package, ShoppingBag, Trash2, Edit, Check, X, Truck } from 'lucide-react'
 import AddProductModal from '../../components/vendor/AddProductModal'
 import { toast } from 'react-toastify'
@@ -10,6 +12,7 @@ export default function VendorDashboard() {
     const [products, setProducts] = useState([])
     const [orders, setOrders] = useState([])
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+    const [editingProduct, setEditingProduct] = useState(null)
     const [isLoading, setIsLoading] = useState(true)
 
     // Helper to filter mock data for current vendor
@@ -17,19 +20,24 @@ export default function VendorDashboard() {
     // For demo, we just show all products/orders or filter by ID if we set one matching.
     const loadData = async () => {
         setIsLoading(true)
-        await new Promise(resolve => setTimeout(resolve, 600))
-
-        // In our mock data, we assigned 'vendor-1' to products
-        // If current user is 'vendor-1', show those. Otherwise show empty or demo data for others.
-        // For simplicity in this demo, we'll show EVERYTHING if the user is a vendor, 
-        // or filter if we want strictness. Let's show filtered.
-
-        const myProducts = MOCK_PRODUCTS.filter(p => p.vendor_id === user?.id || p.vendor_id === 'vendor-1')
-        // ^ Allow 'vendor-1' data to be visible to anyone for demo purposes if they switch accounts
-
-        setProducts(myProducts)
-        setOrders(MOCK_ORDERS) // Show all demo orders
-        setIsLoading(false)
+        try {
+            if (user?.uid) {
+                const [myProducts, myOrders] = await Promise.all([
+                    getProductsByVendor(user.uid),
+                    // For now, assuming we want all orders for this vendor
+                    // We need to implement getOrdersByVendor in orderService if not already
+                    // implementation_plan says we did check order services
+                    getOrdersByVendor(user.uid)
+                ])
+                setProducts(myProducts)
+                setOrders(myOrders)
+            }
+        } catch (error) {
+            console.error("Error loading vendor data:", error)
+            toast.error("Failed to load dashboard data")
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     useEffect(() => {
@@ -41,21 +49,39 @@ export default function VendorDashboard() {
     const handleDeleteProduct = async (id) => {
         if (!window.confirm("Are you sure you want to delete this product?")) return;
 
-        // Simulate delete
-        setProducts(products.filter(p => p.id !== id))
-        toast.success("Product deleted")
+        try {
+            await deleteProduct(id)
+            setProducts(products.filter(p => p.id !== id))
+            toast.success("Product deleted")
+        } catch (error) {
+            console.error("Error deleting product:", error)
+            toast.error("Failed to delete product")
+        }
     }
 
     const updateOrderStatus = async (orderId, newStatus) => {
-        // Simulate update
-        setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o))
-        toast.success(`Order ${newStatus}`)
+        try {
+            await updateOrderStatusService(orderId, newStatus)
+            setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o))
+            toast.success(`Order ${newStatus}`)
+        } catch (error) {
+            console.error("Error updating order:", error)
+            toast.error("Failed to update order status")
+        }
     }
 
     const handleProductAdded = (newProduct) => {
-        // This is called by Modal
-        // We add to local state
-        setProducts([newProduct, ...products])
+        if (editingProduct) {
+            setProducts(products.map(p => p.id === newProduct.id ? newProduct : p))
+            setEditingProduct(null)
+        } else {
+            setProducts([newProduct, ...products])
+        }
+    }
+
+    const handleEditProduct = (product) => {
+        setEditingProduct(product)
+        setIsAddModalOpen(true)
     }
 
     return (
@@ -208,36 +234,73 @@ export default function VendorDashboard() {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {products.map((product) => (
-                                <div key={product.id} className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden group hover:shadow-lg transition-all">
-                                    <div className="h-32 overflow-hidden relative">
-                                        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                        <div className="absolute top-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-2 bg-white/90 backdrop-blur rounded-full text-blue-600 hover:text-blue-700 shadow-sm">
-                                                <Edit className="w-3 h-3" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteProduct(product.id)}
-                                                className="p-2 bg-white/90 backdrop-blur rounded-full text-red-500 hover:text-red-700 shadow-sm"
-                                            >
-                                                <Trash2 className="w-3 h-3" />
-                                            </button>
+                            {products.map((product) => {
+                                // Calculate discount for display if MRP exists
+                                const discount = product.mrp && product.mrp > product.price
+                                    ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
+                                    : 0;
+
+                                return (
+                                    <div key={product.id} className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden group hover:shadow-lg transition-all">
+                                        <div className="h-32 overflow-hidden relative">
+                                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+
+                                            {/* Discount Badge */}
+                                            {discount > 0 && (
+                                                <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-md z-10">
+                                                    {discount}% OFF
+                                                </div>
+                                            )}
+
+                                            <div className="absolute top-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => handleEditProduct(product)}
+                                                    className="p-2 bg-white/90 backdrop-blur rounded-full text-blue-600 hover:text-blue-700 shadow-sm"
+                                                >
+                                                    <Edit className="w-3 h-3" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteProduct(product.id)}
+                                                    className="p-2 bg-white/90 backdrop-blur rounded-full text-red-500 hover:text-red-700 shadow-sm"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="p-4">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h3 className="font-bold text-slate-800 text-base leading-tight">{product.name}</h3>
+                                                <div className="text-right">
+                                                    <span className="font-bold text-green-600 block">₹{product.price}</span>
+                                                    {product.mrp && product.mrp > product.price && (
+                                                        <span className="text-xs text-slate-400 line-through">₹{product.mrp}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Tags Row */}
+                                            {product.tags && product.tags.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mb-3">
+                                                    {product.tags.slice(0, 3).map((tag, idx) => (
+                                                        <span key={idx} className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md font-medium border border-blue-100">
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                    {product.tags.length > 3 && (
+                                                        <span className="text-[10px] px-1.5 py-0.5 bg-slate-50 text-slate-500 rounded-md">+{product.tags.length - 3}</span>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            <div className="flex justify-between items-center text-sm text-slate-400 border-t border-slate-50 pt-3 mt-2">
+                                                <span className="text-xs">
+                                                    Stock: <span className="text-slate-700 font-medium">{product.stock}</span>
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="p-4">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className="font-bold text-slate-800 text-base">{product.name}</h3>
-                                            <span className="font-bold text-green-600">₹{product.price}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-sm text-slate-400">
-                                            <span>Stock: {product.stock}</span>
-                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${product.is_available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                {product.is_available ? 'AVL' : 'OUT'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                                )
+                            })}
                         </div>
                     )}
                 </div>
@@ -245,8 +308,12 @@ export default function VendorDashboard() {
 
             <AddProductModal
                 isOpen={isAddModalOpen}
-                onClose={() => setIsAddModalOpen(false)}
+                onClose={() => {
+                    setIsAddModalOpen(false)
+                    setEditingProduct(null)
+                }}
                 onProductAdded={handleProductAdded}
+                productToEdit={editingProduct}
             />
         </div>
     )

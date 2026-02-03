@@ -2,13 +2,14 @@ import { useSearchParams, Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { Search, MapPin, Star, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { MOCK_PRODUCTS, MOCK_VENDORS } from '../../data/mockData'
+// import { MOCK_PRODUCTS, MOCK_VENDORS } from '../../data/mockData' // Removed
 import { getVendors } from '../../services/vendorService'
+import { getAllProducts } from '../../services/productService'
 
 export default function ProductResults() {
     const [searchParams] = useSearchParams()
     const query = searchParams.get('q')?.toLowerCase().trim() || ''
-    
+
     const [products, setProducts] = useState([])
     const [vendors, setVendors] = useState([])
     const [loading, setLoading] = useState(true)
@@ -34,34 +35,49 @@ export default function ProductResults() {
         const fetchData = async () => {
             try {
                 setLoading(true)
-                const vendorData = await getVendors()
-                setVendors(vendorData || MOCK_VENDORS)
+                const [vendorData, productsData] = await Promise.all([
+                    getVendors(),
+                    getAllProducts()
+                ])
+
+                setVendors(vendorData || [])
 
                 // Filter products matching the search query
                 if (!query) {
-                    setProducts([])
-                    return
+                    setProducts(productsData || [])
+                    // If no query, maybe showing all products is better? 
+                    // The original logic set it to empty array if no query. Keeping generic behavior.
+                    if (!query && productsData.length > 0) setProducts(productsData);
                 }
 
-                const matchingProducts = MOCK_PRODUCTS.filter(product => {
-                    const name = product.name?.toLowerCase() || ''
-                    const description = product.description?.toLowerCase() || ''
-                    return name.includes(query) || description.includes(query)
-                })
+                let filtered = productsData || []
+
+                if (query) {
+                    filtered = filtered.filter(product => {
+                        const name = product.name?.toLowerCase() || ''
+                        const description = product.description?.toLowerCase() || ''
+                        return name.includes(query) || description.includes(query)
+                    })
+                }
 
                 // Enrich products with vendor info and calculate distance
-                const enrichedProducts = matchingProducts.map(product => {
-                    const vendor = (vendorData || MOCK_VENDORS).find(v => v.id === product.vendor_id)
+                const enrichedProducts = filtered.map(product => {
+                    const vendor = (vendorData || []).find(v => v.id === product.vendor_id)
                     let distance = 999999
 
                     if (userLocation && vendor?.location) {
+                        // Check if location is GeoPoint or object
+                        const vLat = vendor.location.latitude || vendor.location._lat || 0
+                        const vLon = vendor.location.longitude || vendor.location._long || 0
+
                         distance = calculateDistance(
                             userLocation.latitude,
                             userLocation.longitude,
-                            vendor.location.latitude || 0,
-                            vendor.location.longitude || 0
+                            vLat,
+                            vLon
                         )
                     } else if (vendor?.latitude && vendor?.longitude) {
+                        // Fallback for flat structure
                         distance = calculateDistance(
                             userLocation?.latitude || 28.7041,
                             userLocation?.longitude || 77.1025,
@@ -137,12 +153,12 @@ export default function ProductResults() {
                         <Search className="w-16 h-16 text-slate-400 mx-auto mb-6" />
                         <h3 className="text-2xl text-slate-700 font-bold mb-3">No Products Found</h3>
                         <p className="text-slate-500 mb-6">
-                            {query 
-                                ? `No products matching "${query}" available at the moment.` 
+                            {query
+                                ? `No products matching "${query}" available at the moment.`
                                 : 'Enter a search query to find products.'}
                         </p>
-                        <Link 
-                            to="/" 
+                        <Link
+                            to="/"
                             className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                         >
                             Back to Home
@@ -160,8 +176,8 @@ export default function ProductResults() {
                             >
                                 {/* Product Image */}
                                 <div className="h-48 overflow-hidden bg-slate-100">
-                                    <img 
-                                        src={product.image_url} 
+                                    <img
+                                        src={product.image_url}
                                         alt={product.name}
                                         className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
                                     />

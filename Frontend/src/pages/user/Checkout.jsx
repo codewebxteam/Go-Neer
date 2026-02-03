@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useCart } from '../../context/CartContext'
 import { useAuth } from '../../context/AuthContext'
 import { useNavigate, Link } from 'react-router-dom'
-import { MOCK_ORDERS } from '../../data/mockData'
+// import { MOCK_ORDERS } from '../../data/mockData'
+import { createOrder } from '../../services/orderService'
 import { toast } from 'react-toastify'
 import { MapPin, Loader2, CheckCircle } from 'lucide-react'
 
@@ -29,9 +30,6 @@ export default function Checkout() {
 
         setLoading(true)
 
-        // Simulate Network Delay
-        await new Promise(resolve => setTimeout(resolve, 1500))
-
         try {
             // Group items by vendor
             const itemsByVendor = cartItems.reduce((acc, item) => {
@@ -41,33 +39,32 @@ export default function Checkout() {
             }, {})
 
             // Create an order for each vendor group
-            for (const vendorId of Object.keys(itemsByVendor)) {
+            const orderPromises = Object.keys(itemsByVendor).map(async (vendorId) => {
                 const vendorItems = itemsByVendor[vendorId]
                 const vendorTotal = vendorItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
 
                 const newOrder = {
-                    id: `ord-${Date.now()}-${vendorId}`,
-                    user_id: user.id,
+                    user_id: user.uid,
                     vendor_id: vendorId,
                     total_amount: vendorTotal,
                     status: 'pending',
                     delivery_address: address,
-                    created_at: new Date().toISOString(),
-                    // Mock joined data for display
-                    vendors: { shop_name: 'Mock Shop (Demo)' },
                     order_items: vendorItems.map(item => ({
                         product_id: item.id,
                         quantity: item.quantity,
-                        products: { name: item.name, image_url: item.image_url }
+                        // Storing snapshot of product info in case product changes later
+                        products: { name: item.name, image_url: item.image_url, price: item.price }
                     }))
                 }
 
-                MOCK_ORDERS.unshift(newOrder) // Add to top
-            }
+                return createOrder(newOrder)
+            })
+
+            await Promise.all(orderPromises)
 
             setIsOrderPlaced(true)
             clearCart()
-            toast.success('Order placed successfully! (Demo Mode)')
+            toast.success('Order placed successfully!')
 
         } catch (error) {
             console.error(error)
