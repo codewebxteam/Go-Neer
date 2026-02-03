@@ -19,7 +19,10 @@ import VendorMenu from './pages/user/VendorMenu'
 import Cart from './pages/user/Cart'
 import Checkout from './pages/user/Checkout'
 import MyOrders from './pages/user/MyOrders'
+
+// Route Guards
 import ProtectedRoute from './components/common/ProtectedRoute'
+import PublicRoute from './components/common/PublicRoute'
 
 function App() {
   return (
@@ -27,47 +30,85 @@ function App() {
       <CartProvider>
         <Routes>
           <Route path="/" element={<MainLayout />}>
+
+            {/* PUBLIC */}
             <Route index element={<Home />} />
-            <Route path="login" element={<Login />} />
-            <Route path="signup" element={<Signup />} />
+
+            <Route
+              path="login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
+
+            <Route
+              path="signup"
+              element={
+                <PublicRoute>
+                  <Signup />
+                </PublicRoute>
+              }
+            />
+
             <Route path="about" element={<About />} />
             <Route path="contact" element={<Contact />} />
             <Route path="search" element={<ProductResults />} />
             <Route path="product/:id" element={<ProductDetail />} />
             <Route path="vendor/:id" element={<VendorMenu />} />
             <Route path="cart" element={<Cart />} />
-            <Route path="checkout" element={
-              <ProtectedRoute allowedRoles={['user', 'vendor', 'admin']}>
-                <Checkout />
-              </ProtectedRoute>
-            } />
-            <Route path="orders" element={
-              <ProtectedRoute allowedRoles={['user', 'vendor', 'admin']}>
-                <MyOrders />
-              </ProtectedRoute>
-            } />
 
-            {/* Protected Routes */}
-            <Route path="vendor/dashboard" element={
-              <ProtectedRoute allowedRoles={['vendor']}>
-                <VendorDashboard />
-              </ProtectedRoute>
-            } />
+            {/* PROTECTED */}
+            <Route
+              path="checkout"
+              element={
+                <ProtectedRoute allowedRoles={['user', 'vendor', 'admin']}>
+                  <Checkout />
+                </ProtectedRoute>
+              }
+            />
 
-            <Route path="admin/dashboard" element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } />
+            <Route
+              path="orders"
+              element={
+                <ProtectedRoute allowedRoles={['user', 'vendor', 'admin']}>
+                  <MyOrders />
+                </ProtectedRoute>
+              }
+            />
 
-            {/* Catch all 404 */}
-            <Route path="*" element={<div className="p-10 text-center">Page Not Found</div>} />
+            <Route
+              path="vendor/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={['vendor']}>
+                  <VendorDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="admin/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 404 */}
+            <Route
+              path="*"
+              element={<div className="p-10 text-center">Page Not Found</div>}
+            />
+
           </Route>
         </Routes>
+
         <ToastContainer position="bottom-right" theme="colored" />
       </CartProvider>
     </AuthProvider>
   )
 }
 
-export default App
+export default App;
