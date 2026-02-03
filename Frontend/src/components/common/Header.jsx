@@ -35,9 +35,6 @@ export default function Header() {
 
                 <nav className="hidden md:flex items-center space-x-8">
                     <Link to="/" className="font-medium hover:text-blue-600 transition-colors">Home</Link>
-                    {user && (
-                        <Link to="/orders" className="font-medium hover:text-blue-600 transition-colors">My Orders</Link>
-                    )}
                     <Link to="/about" className="font-medium hover:text-blue-600 transition-colors">About</Link>
                     <Link to="/contact" className="font-medium hover:text-blue-600 transition-colors">Contact</Link>
                 </nav>

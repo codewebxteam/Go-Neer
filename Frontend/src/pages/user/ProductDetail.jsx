@@ -1,321 +1,298 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
-import { ArrowLeft, Star, MapPin, ShoppingCart, Loader2, Check, Plus, Minus } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { MOCK_PRODUCTS, MOCK_VENDORS } from '../../data/mockData'
 import { useCart } from '../../context/CartContext'
-import { getVendors } from '../../services/vendorService'
+import { ArrowLeft, Star, Clock, MapPin, Plus, ShoppingCart, Check, X, Minus, Trash2, Droplets } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function ProductDetail() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const location = useLocation()
-    const { addToCart, cartItems, updateQuantity, removeFromCart } = useCart()
-    
+    const { addToCart, cartItems, updateQuantity, totalAmount, removeFromCart } = useCart()
     const [product, setProduct] = useState(null)
     const [vendor, setVendor] = useState(null)
-    const [quantity, setQuantity] = useState(1)
+    const [relatedProducts, setRelatedProducts] = useState([])
     const [loading, setLoading] = useState(true)
-    const [added, setAdded] = useState(false)
+    const [showCartPanel, setShowCartPanel] = useState(false)
 
     useEffect(() => {
-        const initializeProduct = async () => {
-            try {
-                setLoading(true)
-                
-                // Try to get from location state first
-                if (location.state?.product) {
-                    setProduct(location.state.product)
-                    setVendor(location.state.vendor)
-                    return
-                }
+        const fetchData = async () => {
+            // Simulate Fetch
+            await new Promise(resolve => setTimeout(resolve, 500))
 
-                // Otherwise fetch from mock data
-                const foundProduct = MOCK_PRODUCTS.find(p => p.id === id)
-                if (foundProduct) {
-                    setProduct(foundProduct)
-                    
-                    // Get vendor info
-                    try {
-                        const vendors = await getVendors()
-                        const foundVendor = vendors?.find(v => v.id === foundProduct.vendor_id)
-                        setVendor(foundVendor || MOCK_VENDORS.find(v => v.id === foundProduct.vendor_id))
-                    } catch (error) {
-                        const foundVendor = MOCK_VENDORS.find(v => v.id === foundProduct.vendor_id)
-                        setVendor(foundVendor)
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading product:', error)
-            } finally {
-                setLoading(false)
+            const foundProduct = MOCK_PRODUCTS.find(p => p.id === id)
+            if (foundProduct) {
+                setProduct(foundProduct)
+                // Find vendor for this product
+                const vendorForProduct = MOCK_VENDORS.find(v => v.id === foundProduct.vendor_id)
+                setVendor(vendorForProduct || MOCK_VENDORS[0])
+                // Get related products from same vendor
+                const related = MOCK_PRODUCTS.filter(p => (p.vendor_id === foundProduct.vendor_id || p.vendor_id === 'vendor-1') && p.id !== id)
+                setRelatedProducts(related)
             }
+            setLoading(false)
         }
 
-        initializeProduct()
-    }, [id, location.state])
+        if (id) fetchData()
+    }, [id, navigate])
 
-    const isInCart = cartItems.some(item => item.id === product?.id)
-    const cartItem = cartItems.find(item => item.id === product?.id)
-
+    // Handle add to cart
     const handleAddToCart = () => {
         if (product) {
-            addToCart({
-                ...product,
-                quantity: quantity
-            })
-            setAdded(true)
-            setTimeout(() => setAdded(false), 2000)
-            setQuantity(1)
+            addToCart(product)
+            setShowCartPanel(true)
         }
     }
 
-    const handleUpdateQuantity = (newQuantity) => {
-        if (newQuantity > 0) {
-            updateQuantity(product.id, newQuantity)
-        }
-    }
+    const isProductInCart = product ? cartItems.some(item => item.id === product.id) : false
 
-    const handleRemoveFromCart = () => {
-        removeFromCart(product.id)
-    }
+    if (loading) return <div className="h-screen flex items-center justify-center"><div className="text-center"><Droplets className="w-12 h-12 text-blue-600 mx-auto mb-4 animate-bounce" /><p>Loading...</p></div></div>
+    if (!product) return <div className="h-screen flex items-center justify-center"><div className="text-center"><Droplets className="w-12 h-12 text-slate-400 mx-auto mb-4" /><p>Product not found</p></div></div>
 
-
-    if (loading) {
-        return (
-            <div className="h-screen flex items-center justify-center">
-                <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
-            </div>
-        )
-    }
-
-    if (!product) {
-        return (
-            <div className="h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <h2 className="text-2xl font-bold text-slate-900 mb-4">Product Not Found</h2>
-                    <Link to="/" className="text-blue-600 hover:text-blue-700 font-semibold">
-                        Back to Home
-                    </Link>
-                </div>
-            </div>
-        )
-    }
 
     return (
-        <div className="min-h-[calc(100vh-64px)] bg-slate-50 py-8">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-                {/* Back Button */}
-                <button 
-                    onClick={() => navigate(-1)}
-                    className="flex items-center text-slate-600 hover:text-blue-600 mb-8 font-medium transition-colors"
-                >
-                    <ArrowLeft className="w-5 h-5 mr-2" />
-                    Back
-                </button>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                    {/* Product Image */}
-                    <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className="bg-white rounded-3xl overflow-hidden shadow-lg p-8 flex items-center justify-center"
-                    >
-                        <img 
-                            src={product.image_url} 
-                            alt={product.name}
-                            className="w-full h-96 object-contain"
-                        />
-                    </motion.div>
-
-                    {/* Product Details */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
-                        className="space-y-6"
-                    >
-                        {/* Product Name */}
-                        <div>
-                            <h1 className="text-4xl font-bold text-slate-900 mb-3">
-                                {product.name}
-                            </h1>
-                            <p className="text-lg text-slate-600">
-                                {product.description}
-                            </p>
-                        </div>
-
-                        {/* Price */}
-                        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 p-6 rounded-2xl border border-blue-200">
-                            <p className="text-slate-600 text-sm mb-1">Price</p>
-                            <p className="text-5xl font-bold text-blue-600">
-                                ₹{product.price}
-                            </p>
-                        </div>
-
-                        {/* Stock Status */}
-                        <div>
-                            <span className={`px-4 py-2 rounded-full font-semibold text-sm ${
-                                product.stock > 0 
-                                    ? 'bg-green-100 text-green-700' 
-                                    : 'bg-red-100 text-red-700'
-                            }`}>
-                                {product.stock > 0 ? `${product.stock} In Stock` : 'Out of Stock'}
-                            </span>
-                        </div>
-
-                        {/* Vendor Information */}
-                        {vendor && (
-                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                                <h3 className="font-bold text-slate-900 mb-4">Sold By</h3>
-                                <div className="flex items-start gap-4">
-                                    {vendor.image_url && (
-                                        <img 
-                                            src={vendor.image_url}
-                                            alt={vendor.shop_name}
-                                            className="w-16 h-16 rounded-xl object-cover"
-                                        />
-                                    )}
-                                    <div className="flex-grow">
-                                        <h4 className="font-bold text-slate-900 text-lg">
-                                            {vendor.shop_name}
-                                        </h4>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                            <span className="font-semibold text-slate-700">
-                                                {vendor.rating || 'N/A'}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-1 text-slate-600 text-sm">
-                                            <MapPin className="w-4 h-4" />
-                                            <span>{vendor.address}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Quantity Selector and Add to Cart */}
-                        <div className="space-y-4">
-                            {isInCart ? (
-                                <div className="bg-white p-6 rounded-2xl border border-slate-200">
-                                    <p className="text-sm font-semibold text-slate-600 mb-3">
-                                        Quantity in Cart
-                                    </p>
-                                    <div className="flex items-center gap-4">
-                                        <button
-                                            onClick={() => handleUpdateQuantity(cartItem.quantity - 1)}
-                                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                                        >
-                                            <Minus className="w-5 h-5 text-slate-600" />
-                                        </button>
-                                        <span className="text-xl font-bold text-slate-900 w-12 text-center">
-                                            {cartItem.quantity}
-                                        </span>
-                                        <button
-                                            onClick={() => handleUpdateQuantity(cartItem.quantity + 1)}
-                                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                                        >
-                                            <Plus className="w-5 h-5 text-slate-600" />
-                                        </button>
-                                        <button
-                                            onClick={handleRemoveFromCart}
-                                            className="ml-auto px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="bg-white p-6 rounded-2xl border border-slate-200">
-                                    <p className="text-sm font-semibold text-slate-600 mb-3">
-                                        Quantity
-                                    </p>
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <button
-                                            onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                                        >
-                                            <Minus className="w-5 h-5 text-slate-600" />
-                                        </button>
-                                        <span className="text-xl font-bold text-slate-900 w-12 text-center">
-                                            {quantity}
-                                        </span>
-                                        <button
-                                            onClick={() => setQuantity(quantity + 1)}
-                                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-                                        >
-                                            <Plus className="w-5 h-5 text-slate-600" />
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Action Buttons */}
-                            <div className="space-y-3">
-                                {isInCart ? (
-                                    <Link
-                                        to="/cart"
-                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors"
-                                    >
-                                        <ShoppingCart className="w-6 h-6" />
-                                        Go to Cart
-                                    </Link>
-                                ) : (
-                                    <button
-                                        onClick={handleAddToCart}
-                                        disabled={product.stock === 0}
-                                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors"
-                                    >
-                                        {added ? (
-                                            <>
-                                                <Check className="w-6 h-6" />
-                                                Added to Cart!
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ShoppingCart className="w-6 h-6" />
-                                                Add to Cart
-                                            </>
-                                        )}
-                                    </button>
-                                )}
-
-                                <Link
-                                    to="/checkout"
-                                    className="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center transition-colors"
-                                >
-                                    Buy Now
-                                </Link>
-                            </div>
-                        </div>
-
-                        {/* Features/Benefits */}
-                        <div className="bg-white p-6 rounded-2xl border border-slate-200">
-                            <h3 className="font-bold text-slate-900 mb-4">Why Choose This Product?</h3>
-                            <ul className="space-y-3">
-                                <li className="flex items-center gap-3 text-slate-700">
-                                    <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                                    Verified and tested quality
-                                </li>
-                                <li className="flex items-center gap-3 text-slate-700">
-                                    <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                                    Nearest vendor available
-                                </li>
-                                <li className="flex items-center gap-3 text-slate-700">
-                                    <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                                    Fast delivery within 30 minutes
-                                </li>
-                                <li className="flex items-center gap-3 text-slate-700">
-                                    <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                                    Secure checkout and payment
-                                </li>
-                            </ul>
-                        </div>
-                    </motion.div>
+        <div className="min-h-screen bg-slate-50 pb-20 relative">
+            {/* Back Button */}
+            <div className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+                <div className="container mx-auto px-4 py-4">
+                    <button onClick={() => navigate(-1)} className="flex items-center text-slate-500 hover:text-blue-600 transition-colors font-medium">
+                        <ArrowLeft className="w-5 h-5 mr-2" /> Back to Products
+                    </button>
                 </div>
             </div>
+
+            <div className="flex container mx-auto px-4 py-8 gap-8 relative">
+                {/* Product Details */}
+                <div className="flex-1">
+                    <div className="bg-white rounded-2xl overflow-hidden shadow-lg border border-slate-100 p-8 mb-8">
+                        {/* Product Image */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                            <div>
+                                <img 
+                                    src={product.image_url} 
+                                    alt={product.name} 
+                                    className="w-full h-96 object-cover rounded-xl shadow-lg"
+                                />
+                            </div>
+
+                            {/* Product Info */}
+                            <div className="flex flex-col justify-between">
+                                <div>
+                                    <div className="mb-4">
+                                        <span className="text-blue-600 font-bold uppercase text-sm bg-blue-50 px-3 py-1 rounded-full">Premium Water</span>
+                                    </div>
+                                    <h1 className="text-4xl font-bold text-slate-900 mb-3">{product.name}</h1>
+                                    <p className="text-slate-600 text-lg mb-6">{product.description}</p>
+
+                                    {/* Price */}
+                                    <div className="mb-6">
+                                        <p className="text-slate-500 text-sm mb-2">Price</p>
+                                        <div className="text-5xl font-bold text-blue-600">₹{product.price}</div>
+                                    </div>
+
+                                    {/* Vendor Info */}
+                                    {vendor && (
+                                        <div className="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-200">
+                                            <p className="text-slate-600 text-sm mb-2">Sold By</p>
+                                            <h3 className="text-lg font-bold text-slate-900 mb-2">{vendor.shop_name}</h3>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex items-center gap-1">
+                                                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                                    <span className="font-bold text-slate-700">{vendor.rating || 'New'}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1 text-slate-600">
+                                                    <Clock className="w-4 h-4" />
+                                                    <span>15-30 min delivery</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Product Features */}
+                                    <div className="mb-6">
+                                        <h3 className="font-bold text-slate-900 mb-3">Key Features</h3>
+                                        <ul className="space-y-2">
+                                            <li className="flex items-center gap-3 text-slate-700">
+                                                <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                                                100% Pure & Filtered Water
+                                            </li>
+                                            <li className="flex items-center gap-3 text-slate-700">
+                                                <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                                                Quality Tested & Certified
+                                            </li>
+                                            <li className="flex items-center gap-3 text-slate-700">
+                                                <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                                                Fast Delivery Service
+                                            </li>
+                                            <li className="flex items-center gap-3 text-slate-700">
+                                                <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                                                Eco-Friendly Packaging
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                {/* Add to Cart Button */}
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={handleAddToCart}
+                                    className={`w-full font-bold py-4 rounded-xl transition-all flex items-center justify-center text-lg ${
+                                        isProductInCart
+                                            ? 'bg-green-500 text-white hover:bg-green-600'
+                                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                                    }`}
+                                >
+                                    {isProductInCart ? (
+                                        <>
+                                            <Check className="w-5 h-5 mr-2" /> Added to Cart
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Plus className="w-5 h-5 mr-2" /> Add to Cart
+                                        </>
+                                    )}
+                                </motion.button>
+                            </div>
+                        </div>
+
+                        {/* Additional Info */}
+                        <div className="border-t border-slate-100 pt-8">
+                            <h3 className="text-2xl font-bold text-slate-900 mb-6">About This Product</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="p-4 bg-slate-50 rounded-xl">
+                                    <p className="text-slate-600 text-sm mb-2">Type</p>
+                                    <p className="font-bold text-slate-900">Mineral Water</p>
+                                </div>
+                                <div className="p-4 bg-slate-50 rounded-xl">
+                                    <p className="text-slate-600 text-sm mb-2">Availability</p>
+                                    <p className="font-bold text-slate-900">In Stock</p>
+                                </div>
+                                <div className="p-4 bg-slate-50 rounded-xl">
+                                    <p className="text-slate-600 text-sm mb-2">Delivery</p>
+                                    <p className="font-bold text-slate-900">15-30 minutes</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Side Cart Window */}
+                <AnimatePresence>
+                    {showCartPanel && (
+                        <motion.div
+                            initial={{ opacity: 0, x: 100 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 100 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            className="fixed right-4 top-24 bottom-4 w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-40 flex flex-col overflow-hidden"
+                            style={{ maxHeight: 'calc(100vh - 8rem)' }}
+                        >
+                            {/* Header */}
+                            <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                                <h3 className="font-bold text-slate-800 flex items-center">
+                                    <ShoppingCart className="w-5 h-5 mr-2 text-blue-600" />
+                                    Your Cart ({cartItems.length})
+                                </h3>
+                                <button onClick={() => setShowCartPanel(false)} className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-500">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            {/* Cart Items List */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                {cartItems.length === 0 ? (
+                                    <div className="text-center py-10 text-slate-400">
+                                        <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                                            <ShoppingCart className="w-8 h-8 opacity-50" />
+                                        </div>
+                                        <p>Your cart is empty</p>
+                                    </div>
+                                ) : (
+                                    cartItems.map((item) => (
+                                        <div key={item.id} className="flex gap-3 bg-white border border-slate-100 p-3 rounded-xl shadow-sm">
+                                            <img src={item.image_url} alt={item.name} className="w-16 h-16 rounded-lg object-cover bg-slate-100" />
+                                            <div className="flex-1 flex flex-col justify-between">
+                                                <div className="flex justify-between items-start">
+                                                    <h4 className="font-bold text-slate-800 text-sm line-clamp-1">{item.name}</h4>
+                                                    <button onClick={() => removeFromCart(item.id)} className="text-slate-400 hover:text-red-500 p-1">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                                <div className="flex justify-between items-center mt-2">
+                                                    <div className="font-bold text-blue-600">₹{item.price * item.quantity}</div>
+                                                    <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
+                                                        <button
+                                                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                                            className="w-6 h-6 flex items-center justify-center bg-white rounded-md shadow-sm hover:bg-slate-50 text-slate-600"
+                                                        >
+                                                            <Minus className="w-3 h-3" />
+                                                        </button>
+                                                        <span className="text-sm font-bold w-4 text-center">{item.quantity}</span>
+                                                        <button
+                                                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                                            className="w-6 h-6 flex items-center justify-center bg-white rounded-md shadow-sm hover:bg-slate-50 text-blue-600"
+                                                        >
+                                                            <Plus className="w-3 h-3" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* Footer / Total */}
+                            {cartItems.length > 0 && (
+                                <div className="p-4 bg-slate-50 border-t border-slate-100">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <span className="text-slate-600">Total Amount</span>
+                                        <span className="text-xl font-bold text-slate-900">₹{totalAmount}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => navigate('/cart')}
+                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-200 transition-all flex items-center justify-center"
+                                    >
+                                        View Cart & Checkout
+                                    </button>
+                                </div>
+                            )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+
+            {/* Related Products Section */}
+            {relatedProducts.length > 0 && (
+                <section className="py-20 bg-white">
+                    <div className="container mx-auto px-4">
+                        <h2 className="text-3xl font-bold text-slate-900 mb-8">Related Products</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {relatedProducts.map(relProduct => (
+                                <motion.div
+                                    key={relProduct.id}
+                                    whileHover={{ y: -10 }}
+                                    onClick={() => navigate(`/product/${relProduct.id}`)}
+                                    className="bg-slate-50 rounded-xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-lg transition-all cursor-pointer"
+                                >
+                                    <div className="h-40 overflow-hidden bg-gradient-to-r from-blue-400 to-cyan-300">
+                                        <img src={relProduct.image_url} alt={relProduct.name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="p-4">
+                                        <h3 className="font-bold text-slate-900 mb-1">{relProduct.name}</h3>
+                                        <p className="text-slate-500 text-sm mb-3 line-clamp-1">{relProduct.description}</p>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-lg font-bold text-blue-600">₹{relProduct.price}</span>
+                                            <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-semibold">View</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
         </div>
     )
 }

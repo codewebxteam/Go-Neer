@@ -1,9 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, ArrowRight, Loader2, Droplets, Truck, ShieldCheck, Clock, Phone, MapPin } from 'lucide-react'
+import { Search, ArrowRight, Loader2, Droplets, Truck, ShieldCheck, Clock, Phone, MapPin, Star } from 'lucide-react'
 import { useEffect, useState } from 'react'
 // import { getDocuments, addDocument } from '../../services/firestoreService'
 import VendorCard from '../../components/user/VendorCard'
-import VendorMap from '../../components/user/VendorMap'
 import { getVendors } from '../../services/vendorService'
 import { MOCK_PRODUCTS } from '../../data/mockData'
 import { motion } from 'framer-motion'
@@ -120,7 +119,7 @@ export default function Home() {
     return (
         <div className="flex flex-col min-h-[calc(100vh-64px)] pb-20 bg-slate-50">
             {/* Hero Section */}
-            <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden">
+            <section className="relative h-screen flex items-center justify-center overflow-hidden">
                 {/* Animated Background */}
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-blue-700 to-cyan-600">
                     <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
@@ -220,121 +219,128 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* Vendors Section */}
-            <section id="vendors-grid" className="py-20 bg-slate-100/50">
+            {/* Impact Statistics Section */}
+            <section className="py-20 bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
                 <div className="container mx-auto px-4">
-                    {searchQuery ? (
-                        <div className="mb-12">
-                            <h2 className="text-3xl font-bold text-slate-900 mb-2">Search Results for "{searchQuery}"</h2>
-                            <p className="text-slate-500">Found {filteredVendors.length} vendors</p>
-                        </div>
-                    ) : (
-                        <div className="mb-12">
-                            <h2 className="text-3xl font-bold text-slate-900 mb-2">All Available Vendors</h2>
-                            <p className="text-slate-500">{filteredVendors.length} vendors ready to serve you</p>
-                        </div>
-                    )}
+                    <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Our Impact By Numbers</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+                        {[
+                            { number: '50K+', label: 'Happy Customers' },
+                            { number: '500+', label: 'Verified Vendors' },
+                            { number: '15min', label: 'Avg Delivery Time' },
+                            { number: '99.8%', label: 'Satisfaction Rate' },
+                        ].map((stat, idx) => (
+                            <motion.div
+                                key={idx}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: idx * 0.1 }}
+                                className="text-center"
+                            >
+                                <motion.div
+                                    className="text-4xl md:text-5xl font-bold mb-2"
+                                    whileHover={{ scale: 1.1 }}
+                                >
+                                    {stat.number}
+                                </motion.div>
+                                <p className="text-blue-100 text-sm md:text-base">{stat.label}</p>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            </section>
 
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8 text-red-700">
-                            <p className="font-semibold">Error loading vendors:</p>
-                            <p className="text-sm mt-2">{error}</p>
-                        </div>
-                    )}
+            {/* Customer Ratings Section */}
+            <section className="py-20 bg-slate-50">
+                <div className="container mx-auto px-4">
+                    <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-12 text-center">What Our Customers Say</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {[
+                            {
+                                name: 'Sarah Johnson',
+                                rating: 5,
+                                text: '"The water quality is exceptional! I\'ve never tasted such pure water. Delivery is always on time."'
+                            },
+                            {
+                                name: 'Mike Chen',
+                                rating: 5,
+                                text: '"Super fast delivery! Ordered at 9 AM and had water by 10 AM. Go-Neer is a lifesaver."'
+                            },
+                            {
+                                name: 'Priya Patel',
+                                rating: 5,
+                                text: '"Reliable service with top-notch water quality. The delivery speed is impressive every time."'
+                            },
+                        ].map((review, idx) => (
+                            <motion.div
+                                key={idx}
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ delay: idx * 0.1 }}
+                                className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 text-center"
+                            >
+                                <div className="flex justify-center mb-4">
+                                    {[...Array(review.rating)].map((_, i) => (
+                                        <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                                    ))}
+                                </div>
+                                <p className="text-slate-600 mb-4 italic">
+                                    {review.text}
+                                </p>
+                                <p className="font-bold text-slate-800">- {review.name}</p>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Products Section */}
+            <section id="products-grid" className="py-20 bg-slate-100/50">
+                <div className="container mx-auto px-4">
+                    <div className="mb-12">
+                        <h2 className="text-3xl font-bold text-slate-900 mb-2">All Available Products</h2>
+                        <p className="text-slate-500">Browse our complete selection of premium water products</p>
+                    </div>
 
                     {loading ? (
                         <div className="flex justify-center py-20">
                             <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
                         </div>
-                    ) : filteredVendors.length > 0 ? (
-                        <>
-                            {/* Image Gallery Section */}
-                            <div className="mb-16">
-                                <h3 className="text-2xl font-bold text-slate-900 mb-6">Vendor Images</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                    {filteredVendors.map((vendor) => (
-                                        <Link key={vendor.id} to={`/vendor/${vendor.id}`} className="block">
-                                            <motion.div
-                                                variants={itemVariants}
-                                                className="relative group cursor-pointer rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 h-64"
-                                            >
-                                                <img
-                                                    src={vendor.image_url}
-                                                    alt={vendor.shop_name}
-                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                                                />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 text-white">
-                                                    <h3 className="font-bold text-lg">{vendor.shop_name}</h3>
-                                                    <p className="text-sm text-gray-200">{vendor.address}</p>
-                                                </div>
-                                            </motion.div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Map and Details Section */}
-                            <div>
-                                <h3 className="text-2xl font-bold text-slate-900 mb-6">Nearby Vendors Map & Details</h3>
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                    {/* Vendor List with Details */}
-                                    <div className="lg:col-span-1">
-                                        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                                            {filteredVendors.map((vendor) => (
-                                                <Link key={vendor.id} to={`/vendor/${vendor.id}`} className="block hover:no-underline">
-                                                    <motion.div 
-                                                        variants={itemVariants}
-                                                        className="bg-white p-4 rounded-xl shadow-md border border-slate-100 hover:shadow-lg transition-all cursor-pointer"
-                                                    >
-                                                        <div className="flex gap-3 mb-3">
-                                                            <img 
-                                                                src={vendor.image_url} 
-                                                                alt={vendor.shop_name}
-                                                                className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                                                            />
-                                                            <div className="flex-grow">
-                                                                <h4 className="font-bold text-slate-900 text-sm">{vendor.shop_name}</h4>
-                                                                <p className="text-xs text-slate-500">{vendor.city}</p>
-                                                                <div className="flex items-center gap-1 mt-1">
-                                                                    <span className="text-yellow-500 text-xs">★</span>
-                                                                    <span className="font-bold text-xs text-slate-700">{vendor.rating}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="space-y-2 text-xs text-slate-600">
-                                                            <div className="flex items-start gap-2">
-                                                                <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0 text-blue-600" />
-                                                                <span>{vendor.address}</span>
-                                                            </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <Clock className="w-3 h-3 flex-shrink-0 text-blue-600" />
-                                                            <span>{vendor.delivery_time || '15-30 min'}</span>
-                                                        </div>
-                                                    </div>
-                                                    <span className={`inline-block mt-3 px-2 py-1 rounded-full text-xs font-bold ${vendor.is_open ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                        {vendor.is_open ? 'Open Now' : 'Closed'}
-                                                    </span>
-                                                    </motion.div>
-                                                </Link>
-                                            ))}
+                    ) : MOCK_PRODUCTS.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {MOCK_PRODUCTS.map(product => (
+                                <Link key={product.id} to={`/product/${product.id}`} className="block">
+                                    <motion.div
+                                        variants={itemVariants}
+                                        initial="hidden"
+                                        whileInView="visible"
+                                        viewport={{ once: true }}
+                                        className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 hover:shadow-lg transition-all h-full flex flex-col"
+                                    >
+                                        <div className="h-48 overflow-hidden bg-gradient-to-r from-blue-400 to-cyan-300">
+                                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover hover:scale-110 transition-transform duration-300" />
                                         </div>
-                                    </div>
-
-                                    {/* Map Section */}
-                                    <div className="lg:col-span-2 h-96">
-                                        <VendorMap vendors={filteredVendors} userLocation={userLocation} />
-                                    </div>
-                                </div>
-                            </div>
-                        </>
+                                        <div className="p-5 flex-grow flex flex-col justify-between">
+                                            <div>
+                                                <h3 className="text-lg font-bold text-slate-900 mb-2">{product.name}</h3>
+                                                <p className="text-slate-500 text-sm mb-3 line-clamp-2">{product.description}</p>
+                                            </div>
+                                            <div className="flex items-center justify-between border-t border-slate-100 pt-3 mt-3">
+                                                <span className="text-lg font-bold text-blue-600">₹{product.price}</span>
+                                                <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-semibold">View Details</span>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                </Link>
+                            ))}
+                        </div>
                     ) : (
                         <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-300 shadow-sm">
-                            <MapPin className="w-16 h-16 text-slate-400 mx-auto mb-6" />
-                            <h3 className="text-2xl text-slate-700 font-bold mb-3">No Vendors Available Yet</h3>
-                            <p className="text-slate-500 mb-6">Vendors will appear here once they sign up. Check back soon!</p>
-                            <Link to="/signup" className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                Become a Vendor
-                            </Link>
+                            <Droplets className="w-16 h-16 text-slate-400 mx-auto mb-6" />
+                            <h3 className="text-2xl text-slate-700 font-bold mb-3">No Products Available Yet</h3>
+                            <p className="text-slate-500 mb-6">Products will appear here soon. Check back later!</p>
                         </div>
                     )}
                 </div>
