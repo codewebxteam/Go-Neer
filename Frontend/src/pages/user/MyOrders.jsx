@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext'
 import { MOCK_ORDERS } from '../../data/mockData'
 import { Package, Clock, MapPin, ChevronRight, CheckCircle, XCircle, Truck } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import Loader from '../../components/common/Loader'
 
 export default function MyOrders() {
     const { user } = useAuth()
@@ -25,6 +26,8 @@ export default function MyOrders() {
 
         if (user) fetchOrders()
     }, [user])
+
+    if(loading) return <Loader/>
 
     const getStatusColor = (status) => {
         switch (status) {

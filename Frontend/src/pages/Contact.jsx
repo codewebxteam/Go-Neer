@@ -1,7 +1,37 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Phone, Mail, MapPin, Clock, Facebook, Instagram, Twitter, Star } from 'lucide-react'
 
+
 export default function Contact() {
+    const [formData, setFormData] = useState({
+        name: "",
+        email: "",
+        subject: "",
+        message: ""
+    })
+
+    const handleChange = (e) => {
+        const { name, value } = e.target
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }))
+    }
+
+    const handleSubmit = (e) => {
+        e.preventDefault()
+        console.log("Form Submitted:", formData)
+
+        // reset after submit
+        setFormData({
+            name: "",
+            email: "",
+            subject: "",
+            message: ""
+        })
+    }
+
     return (
         <div className="min-h-[calc(100vh-64px)] bg-slate-50 py-20">
             <div className="container mx-auto">
@@ -88,6 +118,7 @@ export default function Contact() {
                             </div>
                         </motion.div>
 
+                        {/* FORM — LOGIC FIXED, UI SAME */}
                         <motion.div
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
@@ -95,43 +126,60 @@ export default function Contact() {
                             className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100"
                         >
                             <h2 className="text-2xl font-bold text-slate-900 mb-6">Send us a Message</h2>
-                            <form className="space-y-6">
+
+                            <form className="space-y-6" onSubmit={handleSubmit}>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Name</label>
                                     <input
                                         type="text"
-                                        defaultValue="John Doe"
-                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        name="name"
+                                        value={formData.name}
+                                        onChange={handleChange}
                                         placeholder="Your full name"
+                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        required
                                     />
                                 </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
                                     <input
                                         type="email"
-                                        defaultValue="john.doe@example.com"
-                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
                                         placeholder="your@email.com"
+                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        required
                                     />
                                 </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Subject</label>
                                     <input
                                         type="text"
-                                        defaultValue="Inquiry about water delivery service"
-                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        name="subject"
+                                        value={formData.subject}
+                                        onChange={handleChange}
                                         placeholder="How can we help?"
+                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        required
                                     />
                                 </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-2">Message</label>
                                     <textarea
                                         rows="4"
-                                        defaultValue="Hello, I am interested in your weekly water delivery service. Could you please provide more information about pricing and delivery schedules? Thank you."
-                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                        name="message"
+                                        value={formData.message}
+                                        onChange={handleChange}
                                         placeholder="Tell us more about your inquiry..."
-                                    ></textarea>
+                                        className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                        required
+                                    />
                                 </div>
+
                                 <button
                                     type="submit"
                                     className="w-full bg-blue-600 text-white py-3 px-6 rounded-xl font-bold hover:bg-blue-700 transition-colors"
