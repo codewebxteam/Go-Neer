@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { MOCK_ORDERS } from '../../data/mockData'
+import { getOrdersByUser } from '../../services/orderService'
+// import { MOCK_ORDERS } from '../../data/mockData'
 import { Package, Clock, MapPin, ChevronRight, CheckCircle, XCircle, Truck } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import Loader from '../../components/common/Loader'
 
 export default function MyOrders() {
     const { user } = useAuth()
@@ -11,20 +13,20 @@ export default function MyOrders() {
 
     useEffect(() => {
         const fetchOrders = async () => {
-            // Simulate Fetch
-            await new Promise(resolve => setTimeout(resolve, 600))
-
-            // In mock data, filter by user id, or show all for demo if user matches 'user-1'
-            // For this seamless migration, let's just show all orders that "match" the user ID 
-            // OR if it's our first demo user.
-
-            const myOrders = MOCK_ORDERS.filter(o => o.user_id === user.id || o.user_id === 'user-1') // 'user-1' is the seed user id
-            setOrders(myOrders)
-            setLoading(false)
+            try {
+                const myOrders = await getOrdersByUser(user.uid)
+                setOrders(myOrders)
+            } catch (error) {
+                console.error("Error fetching orders:", error)
+            } finally {
+                setLoading(false)
+            }
         }
 
         if (user) fetchOrders()
     }, [user])
+
+    if (loading) return <Loader />
 
     const getStatusColor = (status) => {
         switch (status) {

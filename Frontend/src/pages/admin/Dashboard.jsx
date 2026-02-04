@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { MOCK_USERS, MOCK_VENDORS, MOCK_ORDERS } from '../../data/mockData'
+// import { MOCK_USERS, MOCK_VENDORS, MOCK_ORDERS } from '../../data/mockData'
+import { getAllUsers } from '../../services/userProfileService'
+import { getVendors } from '../../services/vendorService'
+import { getAllOrders } from '../../services/orderService'
 import { Users, Store, TrendingUp, ShoppingBag } from 'lucide-react'
 
 export default function AdminDashboard() {
@@ -15,21 +18,30 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         const fetchStats = async () => {
-            // Simulate Fetch
-            await new Promise(resolve => setTimeout(resolve, 800))
+            try {
+                // Fetch real data
+                const [users, vendors, orders] = await Promise.all([
+                    getAllUsers(),
+                    getVendors(),
+                    getAllOrders()
+                ])
 
-            const userCount = MOCK_USERS.filter(u => u.role === 'user').length
-            const vendorCount = MOCK_VENDORS.length // or filter users by role vendor
-            const totalRevenue = MOCK_ORDERS.reduce((sum, order) => sum + (order.total_amount || 0), 0)
-            const orderCount = MOCK_ORDERS.length
+                const userCount = users.length
+                const vendorCount = vendors.length
+                const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0)
+                const orderCount = orders.length
 
-            setStats({
-                users: userCount + 120, // Fake extra users for stats
-                vendors: vendorCount + 5,
-                revenue: totalRevenue + 15000,
-                orders: orderCount + 45
-            })
-            setLoading(false)
+                setStats({
+                    users: userCount,
+                    vendors: vendorCount,
+                    revenue: totalRevenue,
+                    orders: orderCount
+                })
+            } catch (error) {
+                console.error("Error fetching admin stats:", error)
+            } finally {
+                setLoading(false)
+            }
         }
 
         fetchStats()

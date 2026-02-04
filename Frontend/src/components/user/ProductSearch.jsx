@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Search, MapPin, Star, Package } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { MOCK_PRODUCTS, MOCK_VENDORS } from '../../data/mockData'
+// import { MOCK_PRODUCTS, MOCK_VENDORS } from '../../data/mockData'
+import { getAllProducts } from '../../services/productService'
 
 export default function ProductSearch() {
     const [searchQuery, setSearchQuery] = useState('')
@@ -25,36 +26,17 @@ export default function ProductSearch() {
         }
     }, [])
 
-    // Load products from mock data and show all by default
+    // Load products from database
     useEffect(() => {
-        setProducts(MOCK_PRODUCTS)
-        // Show all demo products by default
-        const enrichedProducts = MOCK_PRODUCTS.map(product => {
-            const vendor = MOCK_VENDORS.find(v => v.id === product.vendorId)
-            let distance = 999999
+        const fetchProducts = async () => {
+            const allProducts = await getAllProducts()
+            setProducts(allProducts)
+            setFilteredProducts(allProducts) // Initially show all or none? Code implies showing all "enriched"
 
-            if (userLocation && vendor) {
-                distance = parseFloat(
-                    calculateDistance(
-                        userLocation.latitude,
-                        userLocation.longitude,
-                        vendor.latitude,
-                        vendor.longitude
-                    )
-                )
-            } else if (vendor) {
-                distance = vendor.distance || Math.random() * 10
-            }
-
-            return {
-                ...product,
-                vendor: vendor || {},
-                distance: distance
-            }
-        })
-
-        enrichedProducts.sort((a, b) => a.distance - b.distance)
-        setFilteredProducts(enrichedProducts)
+            // We can do client-side enrichment if needed, similar to ProductResults
+            // For now, simple set
+        }
+        fetchProducts()
     }, [])
 
     // Calculate distance between two coordinates using Haversine formula
@@ -146,7 +128,7 @@ export default function ProductSearch() {
         <div className="min-h-[calc(100vh-64px)] pb-20 bg-gradient-to-br from-slate-50 to-blue-50 py-8">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Search Header */}
-                <div 
+                <div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="mb-12"
@@ -168,7 +150,7 @@ export default function ProductSearch() {
                 </div>
                 {/* No Search State */}
                 {!hasSearched && (
-                    <div 
+                    <div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         className="text-center py-20"
@@ -181,7 +163,7 @@ export default function ProductSearch() {
 
                 {/* No Results State */}
                 {hasSearched && filteredProducts.length === 0 && (
-                    <div 
+                    <div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         className="text-center py-20"

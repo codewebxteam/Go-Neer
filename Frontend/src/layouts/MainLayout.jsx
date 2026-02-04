@@ -20,13 +20,12 @@ export default function MainLayout() {
     const handleSignOut = async (e) => {
         // Prevent event bubbling to avoid closing menu immediately if that interferes (though we close it manually)
         e.stopPropagation()
-        console.log("Layout: Sign Out requested")
+        // console.log("Layout: Sign Out requested")
 
         setIsProfileOpen(false)
 
         await signOut()
 
-        console.log("Layout: Sign Out complete, navigating...")
         navigate('/login')
     }
 
@@ -64,7 +63,7 @@ export default function MainLayout() {
                                 <div className="relative">
                                     <button
                                         onClick={() => {
-                                            console.log("Dropdown Clicked. Profile:", profile)
+                                            // console.log("Dropdown Clicked. Profile:", profile)
                                             setIsProfileOpen(!isProfileOpen)
                                         }}
                                         className="flex items-center space-x-2 p-2 hover:bg-slate-100 rounded-full transition-colors focus:outline-none"
@@ -136,24 +135,24 @@ export default function MainLayout() {
                                         </>
                                     )}
                                 </div>
-                                </>
-                                ) : (
-                                <div className="flex items-center space-x-2">
-                                    <Link to="/login" className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors">
-                                        Login
-                                    </Link>
-                                    <Link to="/signup" className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg">
-                                        Sign Up
-                                    </Link>
-                                </div>
+                            </>
+                        ) : (
+                            <div className="flex items-center space-x-2">
+                                <Link to="/login" className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors">
+                                    Login
+                                </Link>
+                                <Link to="/signup" className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg">
+                                    Sign Up
+                                </Link>
+                            </div>
                         )}
 
-                                {/* Mobile Menu Button */}
-                                <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                                    <Menu className="w-6 h-6" />
-                                </button>
-                            </div>
+                        {/* Mobile Menu Button */}
+                        <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                            <Menu className="w-6 h-6" />
+                        </button>
                     </div>
+                </div>
             </header>
 
             {/* Mobile Nav */}

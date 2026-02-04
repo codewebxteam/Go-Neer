@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { MOCK_VENDORS, MOCK_PRODUCTS } from '../../data/mockData'
+// import { MOCK_VENDORS, MOCK_PRODUCTS } from '../../data/mockData'
+import { getVendorById } from '../../services/vendorService'
+import { getProductsByVendor } from '../../services/productService'
 import { useCart } from '../../context/CartContext'
 import { ArrowLeft, Star, Clock, MapPin, Plus, ShoppingCart, Check, X, Minus, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -16,17 +18,24 @@ export default function VendorMenu() {
 
     useEffect(() => {
         const fetchData = async () => {
-            // Simulate Fetch
-            await new Promise(resolve => setTimeout(resolve, 500))
+            try {
+                setLoading(true)
+                const [vendorData, productsData] = await Promise.all([
+                    getVendorById(id),
+                    getProductsByVendor(id)
+                ])
 
-            const foundVendor = MOCK_VENDORS.find(v => v.id === id)
-            if (foundVendor) {
-                setVendor(foundVendor)
-                // Filter products for this vendor (or shared ones for demo)
-                const vendorProducts = MOCK_PRODUCTS.filter(p => p.vendor_id === id || p.vendor_id === 'vendor-1')
-                setProducts(vendorProducts)
+                if (vendorData) {
+                    setVendor(vendorData)
+                    setProducts(productsData || [])
+                } else {
+                    console.error("Vendor not found")
+                }
+            } catch (error) {
+                console.error("Error fetching vendor menu:", error)
+            } finally {
+                setLoading(false)
             }
-            setLoading(false)
         }
 
         if (id) fetchData()
