@@ -86,7 +86,25 @@ export default function MainLayout() {
                                                     <p className="text-xs text-slate-500 truncate">{user.email}</p>
                                                 </div>
                                                 <div className="py-1">
+                                                    {profile?.role === 'user' && (
+                                                        <Link
+                                                            to="/profile"
+                                                            className="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                                                            onClick={() => setIsProfileOpen(false)}
+                                                        >
+                                                            Profile
+                                                        </Link>
+                                                    )}
                                                     {profile?.role === 'vendor' && (
+                                                        <>
+                                                        <Link
+                                                            to="/profile"
+                                                            className="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                                                            onClick={() => setIsProfileOpen(false)}
+                                                        >
+                                                            Profile
+                                                        </Link>
+
                                                         <Link
                                                             to="/vendor/dashboard"
                                                             className="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700"
@@ -94,6 +112,7 @@ export default function MainLayout() {
                                                         >
                                                             Vendor Dashboard
                                                         </Link>
+                                                        </>
                                                     )}
                                                     {profile?.role === 'admin' && (
                                                         <Link

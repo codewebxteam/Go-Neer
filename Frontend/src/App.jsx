@@ -11,6 +11,7 @@ import Login from './pages/auth/Login'
 import Signup from './pages/auth/Signup'
 import About from './pages/About'
 import Contact from './pages/Contact'
+import Profile from './pages/Profile'
 import ProductResults from './pages/user/ProductResults'
 import ProductDetail from './pages/user/ProductDetail'
 import VendorDashboard from './pages/vendor/Dashboard'
@@ -32,6 +33,7 @@ function App() {
             <Route path="signup" element={<Signup />} />
             <Route path="about" element={<About />} />
             <Route path="contact" element={<Contact />} />
+            <Route path="profile" element={<Profile />} />
             <Route path="search" element={<ProductResults />} />
             <Route path="product/:id" element={<ProductDetail />} />
             <Route path="vendor/:id" element={<VendorMenu />} />
