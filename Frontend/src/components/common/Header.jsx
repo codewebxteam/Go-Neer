@@ -34,7 +34,14 @@ export default function Header() {
                 </Link>
 
                 <nav className="hidden md:flex items-center space-x-8">
-                    <Link to="/" className="font-medium hover:text-blue-600 transition-colors">Home</Link>
+                    {console.log("🔍 NAVBAR CHECK - User:", user ? "logged in" : "guest", "Role:", profile?.role || "none")}
+                    <Link to="/" className="font-medium hover:text-blue-600 transition-colors">🏠 Home [UPDATED]</Link>
+                    {/* My Orders - shown to all except vendors */}
+                    {(!user || profile?.role !== 'vendor') && (
+                        <Link to="/orders" className="font-medium hover:text-blue-600 transition-colors">My Orders</Link>
+                    )}
+                    {/* My Products - shown to everyone */}
+                    <Link to="/my-products" className="font-medium hover:text-blue-600 transition-colors">My Products</Link>
                     <Link to="/about" className="font-medium hover:text-blue-600 transition-colors">About</Link>
                     <Link to="/contact" className="font-medium hover:text-blue-600 transition-colors">Contact</Link>
                 </nav>
@@ -69,6 +76,7 @@ export default function Header() {
                                         <div className="text-xs text-slate-500">
                                             {profile?.role || 'User'}
                                         </div>
+
                                         {profile?.role === 'vendor' && (
                                             <Link
                                                 to="/vendor/dashboard"
@@ -78,14 +86,50 @@ export default function Header() {
                                                 Vendor Dashboard
                                             </Link>
                                         )}
+
                                         {profile?.role === 'admin' && (
-                                            <Link
-                                                to="/admin/dashboard"
-                                                className="block text-sm text-blue-600 hover:text-blue-700"
-                                                onClick={() => setIsProfileOpen(false)}
-                                            >
-                                                Admin Dashboard
-                                            </Link>
+                                            <>
+                                                <Link
+                                                    to="/admin/dashboard"
+                                                    className="block text-sm text-blue-600 hover:text-blue-700"
+                                                    onClick={() => setIsProfileOpen(false)}
+                                                >
+                                                    Admin Dashboard
+                                                </Link>
+                                                <Link
+                                                    to="/orders"
+                                                    className="block text-sm text-blue-600 hover:text-blue-700"
+                                                    onClick={() => setIsProfileOpen(false)}
+                                                >
+                                                    My Orders
+                                                </Link>
+                                                <Link
+                                                    to="/my-products"
+                                                    className="block text-sm text-blue-600 hover:text-blue-700"
+                                                    onClick={() => setIsProfileOpen(false)}
+                                                >
+                                                    My Products
+                                                </Link>
+                                            </>
+                                        )}
+
+                                        {profile?.role === 'user' && (
+                                            <>
+                                                <Link
+                                                    to="/orders"
+                                                    className="block text-sm text-blue-600 hover:text-blue-700"
+                                                    onClick={() => setIsProfileOpen(false)}
+                                                >
+                                                    My Orders
+                                                </Link>
+                                                <Link
+                                                    to="/my-products"
+                                                    className="block text-sm text-blue-600 hover:text-blue-700"
+                                                    onClick={() => setIsProfileOpen(false)}
+                                                >
+                                                    My Products
+                                                </Link>
+                                            </>
                                         )}
                                         <button
                                             onClick={handleSignOut}
@@ -129,9 +173,15 @@ export default function Header() {
                 <div className="md:hidden bg-white border-b border-slate-200">
                     <div className="container mx-auto px-4 py-4 space-y-3">
                         <Link to="/" className="block py-2" onClick={() => setIsMenuOpen(false)}>Home</Link>
-                        {user && (
+
+                        {/* My Orders - shown to all except vendors */}
+                        {(!user || profile?.role !== 'vendor') && (
                             <Link to="/orders" className="block py-2" onClick={() => setIsMenuOpen(false)}>My Orders</Link>
                         )}
+
+                        {/* My Products - shown to everyone */}
+                        <Link to="/my-products" className="block py-2" onClick={() => setIsMenuOpen(false)}>My Products</Link>
+
                         <Link to="/about" className="block py-2" onClick={() => setIsMenuOpen(false)}>About</Link>
                         <Link to="/contact" className="block py-2" onClick={() => setIsMenuOpen(false)}>Contact</Link>
                     </div>
@@ -140,3 +190,4 @@ export default function Header() {
         </header>
     )
 }
+

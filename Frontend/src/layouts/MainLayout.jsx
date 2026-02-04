@@ -39,9 +39,12 @@ export default function MainLayout() {
 
                     <nav className="hidden md:flex items-center space-x-8">
                         <Link to="/" className="font-medium hover:text-blue-600 transition-colors">Home</Link>
-                        {user && (
+                        {/* My Orders - shown to all except vendors */}
+                        {(!user || profile?.role !== 'vendor') && (
                             <Link to="/orders" className="font-medium hover:text-blue-600 transition-colors">My Orders</Link>
                         )}
+                        {/* My Products - shown to everyone */}
+                        <Link to="/my-products" className="font-medium hover:text-blue-600 transition-colors">My Products</Link>
                         <Link to="/about" className="font-medium hover:text-blue-600 transition-colors">About</Link>
                         <Link to="/contact" className="font-medium hover:text-blue-600 transition-colors">Contact</Link>
                     </nav>
@@ -96,21 +99,21 @@ export default function MainLayout() {
                                                     )}
                                                     {profile?.role === 'vendor' && (
                                                         <>
-                                                        <Link
-                                                            to="/profile"
-                                                            className="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700"
-                                                            onClick={() => setIsProfileOpen(false)}
-                                                        >
-                                                            Profile
-                                                        </Link>
+                                                            <Link
+                                                                to="/profile"
+                                                                className="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                                                                onClick={() => setIsProfileOpen(false)}
+                                                            >
+                                                                Profile
+                                                            </Link>
 
-                                                        <Link
-                                                            to="/vendor/dashboard"
-                                                            className="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700"
-                                                            onClick={() => setIsProfileOpen(false)}
-                                                        >
-                                                            Vendor Dashboard
-                                                        </Link>
+                                                            <Link
+                                                                to="/vendor/dashboard"
+                                                                className="block px-4 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+                                                                onClick={() => setIsProfileOpen(false)}
+                                                            >
+                                                                Vendor Dashboard
+                                                            </Link>
                                                         </>
                                                     )}
                                                     {profile?.role === 'admin' && (
@@ -159,9 +162,12 @@ export default function MainLayout() {
             {isMenuOpen && (
                 <div className="md:hidden bg-white border-b border-slate-200 p-4 space-y-2">
                     <Link to="/" className="block py-2" onClick={() => setIsMenuOpen(false)}>Home</Link>
-                    {user && (
+                    {/* My Orders - shown to all except vendors */}
+                    {(!user || profile?.role !== 'vendor') && (
                         <Link to="/orders" className="block py-2" onClick={() => setIsMenuOpen(false)}>My Orders</Link>
                     )}
+                    {/* My Products - shown to everyone */}
+                    <Link to="/my-products" className="block py-2" onClick={() => setIsMenuOpen(false)}>My Products</Link>
                     <Link to="/about" className="block py-2" onClick={() => setIsMenuOpen(false)}>About</Link>
                     <Link to="/contact" className="block py-2" onClick={() => setIsMenuOpen(false)}>Contact</Link>
                 </div>
