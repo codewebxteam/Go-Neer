@@ -50,8 +50,8 @@ export default function Header() {
 
     const navLinks = [
         { to: '/', label: 'Home', icon: Home, show: true },
-        { to: '/orders', label: 'My Orders', icon: Package, show: (!user || profile?.role !== 'vendor') },
-        { to: '/my-products', label: 'My Products', icon: Package, show: true },
+        { to: '/orders', label: 'My Orders', icon: Package, show: (user && profile?.role == 'user') },
+        { to: '/my-products', label: (profile?.role=='vendor'? 'My Products' : 'All Products' ), icon: Package, show: true },
         { to: '/about', label: 'About', icon: Info, show: true },
         { to: '/contact', label: 'Contact', icon: Phone, show: true },
     ]
@@ -164,37 +164,39 @@ export default function Header() {
                                             </div>
 
                                             {profile?.role === 'vendor' && (
-                                                <Link
-                                                    to="/vendor/dashboard"
-                                                    className="block px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all"
-                                                    onClick={() => setIsProfileOpen(false)}
-                                                >
-                                                    Vendor Dashboard
-                                                </Link>
+                                                <>
+                                                    <Link
+                                                        to="/profile"
+                                                        className="block px-4 py-1 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all"
+                                                        onClick={() => setIsProfileOpen(false)}
+                                                    >
+                                                        Profile
+                                                    </Link>
+                                                    <Link
+                                                        to="/vendor/dashboard"
+                                                        className="block px-4 py-1 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all"
+                                                        onClick={() => setIsProfileOpen(false)}
+                                                    >
+                                                        Vendor Dashboard
+                                                    </Link>
+                                                </>
                                             )}
 
                                             {profile?.role === 'admin' && (
                                                 <>
                                                     <Link
+                                                        to="/profile"
+                                                        className="block px-4 py-1 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all"
+                                                        onClick={() => setIsProfileOpen(false)}
+                                                    >
+                                                        Profile
+                                                    </Link>
+                                                    <Link
                                                         to="/admin/dashboard"
-                                                        className="block px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all"
+                                                        className="block px-4 py-1 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all"
                                                         onClick={() => setIsProfileOpen(false)}
                                                     >
                                                         Admin Dashboard
-                                                    </Link>
-                                                    <Link
-                                                        to="/orders"
-                                                        className="block px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all"
-                                                        onClick={() => setIsProfileOpen(false)}
-                                                    >
-                                                        My Orders
-                                                    </Link>
-                                                    <Link
-                                                        to="/my-products"
-                                                        className="block px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all"
-                                                        onClick={() => setIsProfileOpen(false)}
-                                                    >
-                                                        My Products
                                                     </Link>
                                                 </>
                                             )}
@@ -202,18 +204,18 @@ export default function Header() {
                                             {profile?.role === 'user' && (
                                                 <>
                                                     <Link
+                                                        to="/profile"
+                                                        className="block px-4 py-1 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all"
+                                                        onClick={() => setIsProfileOpen(false)}
+                                                    >
+                                                        Profile
+                                                    </Link>
+                                                    <Link
                                                         to="/orders"
-                                                        className="block px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all"
+                                                        className="block px-4 py-1 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all"
                                                         onClick={() => setIsProfileOpen(false)}
                                                     >
                                                         My Orders
-                                                    </Link>
-                                                    <Link
-                                                        to="/my-products"
-                                                        className="block px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all"
-                                                        onClick={() => setIsProfileOpen(false)}
-                                                    >
-                                                        My Products
                                                     </Link>
                                                 </>
                                             )}
