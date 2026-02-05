@@ -22,6 +22,7 @@ const VendorMenu = lazy(() => import('./pages/user/VendorMenu'))
 const Cart = lazy(() => import('./pages/user/Cart'))
 const Checkout = lazy(() => import('./pages/user/Checkout'))
 const MyOrders = lazy(() => import('./pages/user/MyOrders'))
+const Products = lazy(() => import('./pages/user/Products'))
 
 // Route Guards
 import ProtectedRoute from './components/common/ProtectedRoute'
@@ -65,6 +66,15 @@ function App() {
               <Route path="cart" element={<Cart />} />
 
               {/* PROTECTED */}
+              <Route
+                path="my-products"
+                element={
+                  <ProtectedRoute allowedRoles={['user', 'admin']}>
+                    <Products />
+                  </ProtectedRoute>
+                }
+              />
+
               <Route
                 path="checkout"
                 element={
