@@ -75,12 +75,6 @@ export default function Home() {
     },
   };
 
-  const stats = [
-    { icon: Package, value: "10K+", label: "Orders Delivered" },
-    { icon: Award, value: "500+", label: "Verified Vendors" },
-    { icon: Star, value: "4.9", label: "Average Rating" },
-    { icon: TrendingUp, value: "98%", label: "Happy Customers" },
-  ];
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-slate-50 to-white">
