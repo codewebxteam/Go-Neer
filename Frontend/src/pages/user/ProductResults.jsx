@@ -1,9 +1,7 @@
 import { useSearchParams, Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { Search, MapPin, Star, Loader2 } from 'lucide-react'
+import { Search, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
-// import { MOCK_PRODUCTS, MOCK_VENDORS } from '../../data/mockData' // Removed
-import { getVendors } from '../../services/vendorService'
 import { getAllProducts } from '../../services/productService'
 
 export default function ProductResults() {
@@ -11,44 +9,14 @@ export default function ProductResults() {
     const query = searchParams.get('q')?.toLowerCase().trim() || ''
 
     const [products, setProducts] = useState([])
-    const [vendors, setVendors] = useState([])
     const [loading, setLoading] = useState(true)
-    const [userLocation, setUserLocation] = useState(null)
 
-    // Get user's location on mount
-    useEffect(() => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords
-                    setUserLocation({ latitude, longitude })
-                },
-                (error) => {
-                    console.log('Location access not available:', error.message)
-                }
-            )
-        }
-    }, [])
-
-    // Fetch vendors and filter products
+    // Fetch and filter products
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true)
-                const [vendorData, productsData] = await Promise.all([
-                    getVendors(),
-                    getAllProducts()
-                ])
-
-                setVendors(vendorData || [])
-
-                // Filter products matching the search query
-                if (!query) {
-                    setProducts(productsData || [])
-                    // If no query, maybe showing all products is better? 
-                    // The original logic set it to empty array if no query. Keeping generic behavior.
-                    if (!query && productsData.length > 0) setProducts(productsData);
-                }
+                const productsData = await getAllProducts()
 
                 let filtered = productsData || []
 
@@ -58,44 +26,12 @@ export default function ProductResults() {
                         const description = product.description?.toLowerCase() || ''
                         return name.includes(query) || description.includes(query)
                     })
+                } else {
+                    // Show all products if no query
+                    filtered = productsData || []
                 }
 
-                // Enrich products with vendor info and calculate distance
-                const enrichedProducts = filtered.map(product => {
-                    const vendor = (vendorData || []).find(v => v.id === product.vendor_id)
-                    let distance = 999999
-
-                    if (userLocation && vendor?.location) {
-                        // Check if location is GeoPoint or object
-                        const vLat = vendor.location.latitude || vendor.location._lat || 0
-                        const vLon = vendor.location.longitude || vendor.location._long || 0
-
-                        distance = calculateDistance(
-                            userLocation.latitude,
-                            userLocation.longitude,
-                            vLat,
-                            vLon
-                        )
-                    } else if (vendor?.latitude && vendor?.longitude) {
-                        // Fallback for flat structure
-                        distance = calculateDistance(
-                            userLocation?.latitude || 28.7041,
-                            userLocation?.longitude || 77.1025,
-                            vendor.latitude,
-                            vendor.longitude
-                        )
-                    }
-
-                    return {
-                        ...product,
-                        vendor: vendor || {},
-                        distance: parseFloat(distance)
-                    }
-                })
-
-                // Sort by distance (nearest first)
-                enrichedProducts.sort((a, b) => a.distance - b.distance)
-                setProducts(enrichedProducts)
+                setProducts(filtered)
             } catch (error) {
                 console.error('Error fetching data:', error)
                 setProducts([])
@@ -105,20 +41,7 @@ export default function ProductResults() {
         }
 
         fetchData()
-    }, [query, userLocation])
-
-    // Calculate distance between two coordinates
-    const calculateDistance = (lat1, lon1, lat2, lon2) => {
-        const R = 6371 // Earth's radius in km
-        const dLat = (lat2 - lat1) * Math.PI / 180
-        const dLon = (lon2 - lon1) * Math.PI / 180
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2)
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-        return (R * c).toFixed(1)
-    }
+    }, [query])
 
     const itemVariants = {
         hidden: { y: 20, opacity: 0 },
@@ -196,31 +119,10 @@ export default function ProductResults() {
                                     </div>
 
                                     {/* Price */}
-                                    <div className="mb-3">
+                                    <div className="mb-4">
                                         <p className="text-2xl font-bold text-blue-600">
                                             ₹{product.price}
                                         </p>
-                                    </div>
-
-                                    {/* Vendor Info */}
-                                    <div className="mb-4 pb-4 border-b border-slate-200">
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div>
-                                                <p className="font-semibold text-slate-800 text-sm">
-                                                    {product.vendor?.shop_name || 'Unknown Vendor'}
-                                                </p>
-                                                <div className="flex items-center gap-1">
-                                                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                                                    <span className="text-xs text-slate-600">
-                                                        {product.vendor?.rating || 'N/A'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-1 text-xs text-slate-500">
-                                            <MapPin className="w-3 h-3" />
-                                            <span>{product.distance} km away</span>
-                                        </div>
                                     </div>
 
                                     {/* View Details Button */}

@@ -6,95 +6,51 @@ import {
   ShieldCheck,
   Clock,
   Phone,
-  MapPin,
   Package,
   Star,
   TrendingUp,
   Award,
   Zap,
-  ChevronRight,
-  MapPinned,
 } from "lucide-react";
-import { useEffect, useState, Suspense, lazy } from "react";
-const VendorMap = lazy(() => import("../../components/user/VendorMap"));
-import { getVendors } from "../../services/vendorService";
+import { useEffect, useState } from "react";
+import { getAllProducts } from "../../services/productService";
 import { motion } from "framer-motion";
 
 export default function Home() {
   const navigate = useNavigate();
-  const [vendors, setVendors] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredVendors, setFilteredVendors] = useState([]);
-  const [userLocation, setUserLocation] = useState(null);
-  const [hoveredVendor, setHoveredVendor] = useState(null);
+
+  // Stats data for hero section
+  const stats = [
+    { icon: Package, value: "10K+", label: "Orders Delivered" },
+    { icon: Award, value: "500+", label: "Verified Vendors" },
+    { icon: Star, value: "4.9", label: "Average Rating" },
+    { icon: TrendingUp, value: "98%", label: "Happy Customers" },
+  ];
 
   useEffect(() => {
-    const fetchVendors = async () => {
+    const fetchProducts = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await getVendors();
-        setVendors(data || []);
-        setFilteredVendors(data || []);
+        const data = await getAllProducts();
+        setProducts(data || []);
       } catch (error) {
-        console.error("Failed to fetch vendors:", error);
-        setError(error.message || "Failed to load vendors");
-        setVendors([]);
-        setFilteredVendors([]);
+        console.error("Failed to fetch products:", error);
+        setError(error.message || "Failed to load products");
+        setProducts([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchVendors();
+    fetchProducts();
   }, []);
 
-  const getUserLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setUserLocation({ latitude, longitude });
-          handleLocationSearch(latitude, longitude);
-        },
-        (error) => {
-          console.warn("Location access denied or unavailable");
-        },
-      );
-    }
-  };
 
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371;
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return (R * c).toFixed(1);
-  };
-
-  const handleLocationSearch = (latitude, longitude) => {
-    const nearby = vendors
-      .map((vendor) => ({
-        ...vendor,
-        distance: calculateDistance(
-          latitude,
-          longitude,
-          vendor.latitude,
-          vendor.longitude,
-        ),
-      }))
-      .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
-
-    setFilteredVendors(nearby);
-  };
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -129,13 +85,6 @@ export default function Home() {
       },
     },
   };
-
-  const stats = [
-    { icon: Package, value: "10K+", label: "Orders Delivered" },
-    { icon: Award, value: "500+", label: "Verified Vendors" },
-    { icon: Star, value: "4.9", label: "Average Rating" },
-    { icon: TrendingUp, value: "98%", label: "Happy Customers" },
-  ];
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-slate-50 to-white">
@@ -294,15 +243,6 @@ export default function Home() {
                     </button>
                   </div>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={getUserLocation}
-                  className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 border border-white/30 rounded-full text-white hover:bg-white/20 transition-all text-sm md:text-base"
-                >
-                  <MapPinned className="w-4 h-4" />
-                  Use My Location
-                </button>
               </form>
             </motion.div>
 
@@ -394,14 +334,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Vendors Section */}
+      {/* Products Section */}
       <section className="py-12 md:py-20 bg-slate-50">
         <div className="container mx-auto px-4">
           {loading ? (
+            /* SKELETON LOADING STATE */
             <div className="space-y-8 animate-pulse">
-              <div className="h-10 bg-slate-200 rounded w-1/3 mx-auto mb-12" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div className="h-8 bg-slate-200 rounded-lg w-1/3 mb-12" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
                   <div key={i} className="h-72 bg-slate-200 rounded-2xl" />
                 ))}
               </div>
@@ -410,10 +351,10 @@ export default function Home() {
             <>
               <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-2">
-                  Available <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Vendors</span>
+                  Available <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Products</span>
                 </h2>
                 <p className="text-slate-600 text-base md:text-lg">
-                  {filteredVendors.length} vendors ready to serve you
+                  {products.length} premium water products available
                 </p>
               </div>
 
@@ -423,87 +364,55 @@ export default function Home() {
                 </div>
               )}
 
-              {filteredVendors.length > 0 ? (
-                <>
-                  {/* Vendor Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 mb-16">
-                    {filteredVendors.map((vendor) => (
-                      <Link key={vendor.id} to={`/vendor/${vendor.id}`}>
-                        <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group">
-                          <div className="relative h-48 bg-gradient-to-br from-blue-100 to-cyan-100">
-                            <img
-                              src={vendor.image_url}
-                              alt={vendor.shop_name}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                            />
-                            <span className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-md ${vendor.is_open ? "bg-green-500/90 text-white" : "bg-red-500/90 text-white"}`}>
-                              {vendor.is_open ? "Open" : "Closed"}
-                            </span>
-                          </div>
-                          <div className="p-5">
-                            <h3 className="font-bold text-lg text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
-                              {vendor.shop_name}
-                            </h3>
-                            <div className="flex items-center gap-1 mb-3">
-                              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                              <span className="font-bold text-sm">{vendor.rating || "4.5"}</span>
+              {products.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                  {products.map((product) => (
+                    <Link key={product.id} to={`/product/${product.id}`}>
+                      <motion.div
+                        variants={itemVariants}
+                        className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all group h-full flex flex-col"
+                      >
+                        <div className="relative h-48 overflow-hidden bg-slate-100">
+                          <img
+                            src={product.image_url}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                          <span className="absolute top-3 right-3 bg-blue-600 text-white px-3 py-1.5 rounded-full text-xs font-bold">
+                            ₹{product.price}
+                          </span>
+                        </div>
+                        <div className="p-5 flex-grow flex flex-col">
+                          <h3 className="font-bold text-lg text-slate-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                            {product.name}
+                          </h3>
+                          <p className="text-sm text-slate-600 mb-3 line-clamp-2 flex-grow">
+                            {product.description}
+                          </p>
+                          <div className="mt-auto">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Package className="w-4 h-4 text-blue-600" />
+                              <span className="text-sm text-slate-600">{product.quantity || 'Standard'}</span>
                             </div>
-                            <div className="space-y-2 text-sm text-slate-600">
-                              <div className="flex items-start gap-2">
-                                <MapPin className="w-4 h-4 mt-0.5 text-blue-600" />
-                                <span className="line-clamp-2">{vendor.address}</span>
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
+                                ))}
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-blue-600" />
-                                <span>{vendor.delivery_time || "15-30 min"}</span>
-                              </div>
+                              <span className="text-sm font-semibold text-slate-800">4.8</span>
                             </div>
                           </div>
                         </div>
-                      </Link>
-                    ))}
-                  </div>
-
-                  {/* Map Section */}
-                  <div>
-                    <h3 className="text-2xl md:text-3xl font-black text-center mb-8">
-                      Find Vendors <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Near You</span>
-                    </h3>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      <div className="lg:col-span-1 space-y-4 max-h-96 overflow-y-auto">
-                        {filteredVendors.slice(0, 10).map((vendor) => (
-                          <Link key={vendor.id} to={`/vendor/${vendor.id}`}>
-                            <div className="bg-white p-4 rounded-2xl shadow-md hover:shadow-xl transition-all">
-                              <div className="flex gap-3">
-                                <img src={vendor.image_url} alt={vendor.shop_name} className="w-16 h-16 rounded-lg object-cover" />
-                                <div className="flex-1">
-                                  <h4 className="font-bold text-sm mb-1">{vendor.shop_name}</h4>
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                    <span>{vendor.rating || "4.5"}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                      <div className="lg:col-span-2 h-96 rounded-2xl overflow-hidden shadow-2xl">
-                        <Suspense fallback={<div className="w-full h-full bg-blue-100 flex items-center justify-center">Loading Map...</div>}>
-                          <VendorMap vendors={filteredVendors} userLocation={userLocation} />
-                        </Suspense>
-                      </div>
-                    </div>
-                  </div>
-                </>
+                      </motion.div>
+                    </Link>
+                  ))}
+                </div>
               ) : (
-                <div className="text-center py-20 bg-white rounded-3xl">
-                  <MapPin className="w-20 h-20 text-blue-400 mx-auto mb-6" />
-                  <h3 className="text-3xl font-black mb-3">No Vendors Available</h3>
-                  <p className="text-slate-600 mb-8">Check back soon!</p>
-                  <Link to="/signup" className="inline-flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-blue-700">
-                    Become a Vendor <ArrowRight className="w-5 h-5" />
-                  </Link>
+                <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-300">
+                  <Package className="w-20 h-20 text-blue-400 mx-auto mb-6" />
+                  <h3 className="text-3xl font-black mb-3">No Products Available Yet</h3>
+                  <p className="text-slate-600 mb-8">Products will appear here once vendors add them. Check back soon!</p>
                 </div>
               )}
             </>
@@ -515,7 +424,7 @@ export default function Home() {
       <section className="py-12 md:py-20 container mx-auto px-4">
         <div className="relative bg-gradient-to-r from-blue-600 to-cyan-600 rounded-3xl p-12 md:p-16 text-white text-center overflow-hidden">
           <div className="relative z-10">
-            <Droplets className="w -16 h-16 mx-auto mb-6 text-cyan-200" />
+            <Droplets className="w-16 h-16 mx-auto mb-6 text-cyan-200" />
             <h2 className="text-3xl md:text-5xl font-black mb-6">Ready to quench your thirst?</h2>
             <p className="text-blue-100 text-lg mb-10 max-w-2xl mx-auto">
               Join thousands of happy customers today!
