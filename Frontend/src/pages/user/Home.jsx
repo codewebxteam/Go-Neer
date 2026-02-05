@@ -8,10 +8,9 @@ import {
   Phone,
   Package,
   Star,
-  Zap,
-  Users,
   TrendingUp,
   Award,
+  Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getAllProducts } from "../../services/productService";
@@ -50,6 +49,8 @@ export default function Home() {
 
     fetchProducts();
   }, []);
+
+
 
   const handleSearch = (e) => {
     e.preventDefault();
