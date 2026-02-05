@@ -8,6 +8,10 @@ import {
   Phone,
   Package,
   Star,
+  Zap,
+  Users,
+  TrendingUp,
+  Award,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getAllProducts } from "../../services/productService";
@@ -19,6 +23,14 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Stats data for hero section
+  const stats = [
+    { icon: Package, value: "10K+", label: "Orders Delivered" },
+    { icon: Award, value: "500+", label: "Verified Vendors" },
+    { icon: Star, value: "4.9", label: "Average Rating" },
+    { icon: TrendingUp, value: "98%", label: "Happy Customers" },
+  ];
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -38,8 +50,6 @@ export default function Home() {
 
     fetchProducts();
   }, []);
-
-
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -74,7 +84,6 @@ export default function Home() {
       },
     },
   };
-
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-slate-50 to-white">
@@ -414,7 +423,7 @@ export default function Home() {
       <section className="py-12 md:py-20 container mx-auto px-4">
         <div className="relative bg-gradient-to-r from-blue-600 to-cyan-600 rounded-3xl p-12 md:p-16 text-white text-center overflow-hidden">
           <div className="relative z-10">
-            <Droplets className="w -16 h-16 mx-auto mb-6 text-cyan-200" />
+            <Droplets className="w-16 h-16 mx-auto mb-6 text-cyan-200" />
             <h2 className="text-3xl md:text-5xl font-black mb-6">Ready to quench your thirst?</h2>
             <p className="text-blue-100 text-lg mb-10 max-w-2xl mx-auto">
               Join thousands of happy customers today!
