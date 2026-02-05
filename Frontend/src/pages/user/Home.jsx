@@ -233,15 +233,6 @@ export default function Home() {
                     </button>
                   </div>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={getUserLocation}
-                  className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 border border-white/30 rounded-full text-white hover:bg-white/20 transition-all text-sm md:text-base"
-                >
-                  <MapPinned className="w-4 h-4" />
-                  Use My Location
-                </button>
               </form>
             </motion.div>
 
