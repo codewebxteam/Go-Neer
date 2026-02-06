@@ -110,7 +110,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const value = { user, profile, loading, login, signup, signOut };
+  // REFRESH PROFILE - Reload profile data from database
+  const refreshProfile = async () => {
+    if (user) {
+      await loadUserProfile(user.uid);
+    }
+  };
+
+  const value = { user, profile, loading, login, signup, signOut, refreshProfile };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

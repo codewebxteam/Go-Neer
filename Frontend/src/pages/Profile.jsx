@@ -29,9 +29,10 @@ import {
 } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { getUserStats, getVendorStats, getRecentOrders } from '../services/profileStatsService'
+import { updateProfile } from '../services/profileUpdateService'
 
 export default function Profile() {
-  const { user, signOut, profile, loading } = useAuth()
+  const { user, signOut, profile, loading, refreshProfile } = useAuth()
   const navigate = useNavigate()
   const [isEditing, setIsEditing] = useState(false)
   const [editedProfile, setEditedProfile] = useState({})
@@ -43,6 +44,7 @@ export default function Profile() {
     activeProducts: 0,
   })
   const [statsLoading, setStatsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -118,12 +120,32 @@ export default function Profile() {
 
   const handleSave = async () => {
     try {
-      // TODO: Implement profile update API call
+      setIsSaving(true)
+
+      // Validate required fields
+      if (!editedProfile.full_name || !editedProfile.phone) {
+        toast.error('Full name and phone are required')
+        return
+      }
+
+      // Update profile in database
+      await updateProfile(user.uid, profile.role, {
+        full_name: editedProfile.full_name,
+        phone: editedProfile.phone,
+        address: editedProfile.address || '',
+        bio: editedProfile.bio || ''
+      })
+
+      // Refresh profile data from database
+      await refreshProfile()
+
       toast.success('Profile updated successfully!')
       setIsEditing(false)
     } catch (error) {
-      toast.error('Failed to update profile')
-      console.error(error)
+      toast.error('Failed to update profile. Please try again.')
+      console.error('Profile update error:', error)
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -239,12 +261,12 @@ export default function Profile() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 }}
-                className="flex gap-3"
+                className="flex flex-wrap gap-3 justify-center md:justify-start"
               >
                 {!isEditing ? (
                   <button
                     onClick={handleEdit}
-                    className="bg-white/10 backdrop-blur-md border border-white/30 text-white px-6 py-3 rounded-xl font-semibold hover:bg-white/20 transition-all flex items-center gap-2"
+                    className="bg-white/10 backdrop-blur-md border border-white/30 text-white px-6 py-3 rounded-xl font-semibold hover:bg-white/20 transition-all flex items-center gap-2 shadow-lg"
                   >
                     <Edit3 className="w-4 h-4" />
                     Edit Profile
@@ -253,14 +275,25 @@ export default function Profile() {
                   <>
                     <button
                       onClick={handleSave}
-                      className="bg-green-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-600 transition-all flex items-center gap-2"
+                      disabled={isSaving}
+                      className="bg-green-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-600 transition-all flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Save className="w-4 h-4" />
-                      Save
+                      {isSaving ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          Save
+                        </>
+                      )}
                     </button>
                     <button
                       onClick={handleCancel}
-                      className="bg-red-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-600 transition-all flex items-center gap-2"
+                      disabled={isSaving}
+                      className="bg-red-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-600 transition-all flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <X className="w-4 h-4" />
                       Cancel
@@ -269,7 +302,8 @@ export default function Profile() {
                 )}
                 <button
                   onClick={handleLogout}
-                  className="bg-red-500/90 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-600 transition-all flex items-center gap-2"
+                  disabled={isSaving}
+                  className="bg-red-500/90 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-600 transition-all flex items-center gap-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <LogOut className="w-4 h-4" />
                   Logout
@@ -292,71 +326,76 @@ export default function Profile() {
 
       {/* Main Content */}
       <section className="container mx-auto px-4 py-12 -mt-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Profile Details Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="lg:col-span-2"
-            >
-              <div className="bg-white rounded-2xl shadow-xl p-8 border border-slate-200">
-                <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
-                  <User className="w-6 h-6 text-blue-600" />
+        <div className="max-w-4xl mx-auto">
+          {/* Profile Details Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="w-full"
+          >
+            <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 lg:p-10 border border-slate-200">
+              <div className="mb-8">
+                <h2 className="text-3xl font-black text-slate-900 mb-2 flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl">
+                    <User className="w-6 h-6 text-white" />
+                  </div>
                   Profile Information
                 </h2>
+                <p className="text-slate-600 text-sm ml-14">Manage your personal information and account settings</p>
+              </div>
 
-                <div className="space-y-6">
-                  {/* Full Name */}
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Full Name
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={editedProfile.full_name}
-                        onChange={(e) => handleInputChange('full_name', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all"
-                      />
-                    ) : (
-                      <div className="px-4 py-3 bg-slate-50 rounded-xl text-slate-800 font-medium">
-                        {profile.full_name}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Phone */}
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Phone Number
-                    </label>
-                    {isEditing ? (
-                      <input
-                        type="tel"
-                        value={editedProfile.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all"
-                      />
-                    ) : (
-                      <div className="px-4 py-3 bg-slate-50 rounded-xl text-slate-800 font-medium">
-                        {profile.phone || 'Not provided'}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Email (Read-only) */}
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Email Address
-                    </label>
-                    <div className="px-4 py-3 bg-slate-100 rounded-xl text-slate-600 font-medium opacity-60">
-                      {user.email}
+              <div className="space-y-6">
+                {/* Full Name */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Full Name
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={editedProfile.full_name}
+                      onChange={(e) => handleInputChange('full_name', e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all"
+                    />
+                  ) : (
+                    <div className="px-4 py-3 bg-slate-50 rounded-xl text-slate-800 font-medium">
+                      {profile.full_name}
                     </div>
-                  </div>
+                  )}
+                </div>
 
-                  {/* Address */}
+                {/* Phone */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Phone Number
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="tel"
+                      value={editedProfile.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all"
+                    />
+                  ) : (
+                    <div className="px-4 py-3 bg-slate-50 rounded-xl text-slate-800 font-medium">
+                      {profile.phone || 'Not provided'}
+                    </div>
+                  )}
+                </div>
+
+                {/* Email (Read-only) */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Email Address
+                  </label>
+                  <div className="px-4 py-3 bg-slate-100 rounded-xl text-slate-600 font-medium opacity-60">
+                    {user.email}
+                  </div>
+                </div>
+
+                {/* Address */}
+                {(isUser || isVendor) && (
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
                       Address
@@ -374,195 +413,48 @@ export default function Profile() {
                       </div>
                     )}
                   </div>
+                )}
 
-                  {/* Vendor-specific: Bio */}
-                  {isVendor && (
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">
-                        Business Bio
-                      </label>
-                      {isEditing ? (
-                        <textarea
-                          value={editedProfile.bio}
-                          onChange={(e) => handleInputChange('bio', e.target.value)}
-                          rows={4}
-                          placeholder="Tell customers about your business..."
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all resize-none"
-                        />
-                      ) : (
-                        <div className="px-4 py-3 bg-slate-50 rounded-xl text-slate-800 font-medium min-h-[100px]">
-                          {profile.bio || 'No bio provided'}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                {/* Vendor-specific: Bio */}
+                {isVendor && (
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-2">
+                      Business Bio
+                    </label>
+                    {isEditing ? (
+                      <textarea
+                        value={editedProfile.bio}
+                        onChange={(e) => handleInputChange('bio', e.target.value)}
+                        rows={4}
+                        placeholder="Tell customers about your business..."
+                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all resize-none"
+                      />
+                    ) : (
+                      <div className="px-4 py-3 bg-slate-50 rounded-xl text-slate-800 font-medium min-h-[100px]">
+                        {profile.bio || 'No bio provided'}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                  {/* Account Created */}
-                  <div className="pt-4 border-t border-slate-200">
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <Calendar className="w-4 h-4" />
-                      <span className="text-sm">
-                        Member since{' '}
-                        <span className="font-semibold text-slate-800">
-                          {new Date(user.metadata?.creationTime || Date.now()).toLocaleDateString(
-                            'en-US',
-                            { year: 'numeric', month: 'long' }
-                          )}
-                        </span>
+                {/* Account Created */}
+                <div className="pt-4 border-t border-slate-200">
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <Calendar className="w-4 h-4" />
+                    <span className="text-sm">
+                      Member since{' '}
+                      <span className="font-semibold text-slate-800">
+                        {new Date(user.metadata?.creationTime || Date.now()).toLocaleDateString(
+                          'en-US',
+                          { year: 'numeric', month: 'long' }
+                        )}
                       </span>
-                    </div>
+                    </span>
                   </div>
                 </div>
               </div>
-            </motion.div>
-
-            {/* Stats/Quick Info Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="space-y-6"
-            >
-              {/* Role-based Stats */}
-              {isVendor ? (
-                <div className="bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl shadow-xl p-6 text-white">
-                  <h3 className="text-xl font-black mb-6 flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5" />
-                    Vendor Stats
-                  </h3>
-                  {statsLoading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="space-y-4">
-                        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-cyan-100 text-sm">Total Orders</span>
-                            <Package className="w-4 h-4 text-cyan-200" />
-                          </div>
-                          <div className="text-2xl font-black">{vendorStats.totalOrders}</div>
-                        </div>
-                        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-cyan-100 text-sm">Revenue</span>
-                            <DollarSign className="w-4 h-4 text-cyan-200" />
-                          </div>
-                          <div className="text-2xl font-black">₹{vendorStats.revenue}</div>
-                        </div>
-                        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-cyan-100 text-sm">Rating</span>
-                            <Star className="w-4 h-4 text-yellow-300 fill-yellow-300" />
-                          </div>
-                          <div className="text-2xl font-black">{vendorStats.rating}/5.0</div>
-                        </div>
-                        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-cyan-100 text-sm">Active Products</span>
-                            <Droplets className="w-4 h-4 text-cyan-200" />
-                          </div>
-                          <div className="text-2xl font-black">{vendorStats.activeProducts}</div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => navigate('/vendor/dashboard')}
-                        className="w-full mt-6 bg-white text-blue-600 py-3 rounded-xl font-bold hover:bg-blue-50 transition-all"
-                      >
-                        Go to Dashboard
-                      </button>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl shadow-xl p-6 text-white">
-                  <h3 className="text-xl font-black mb-6 flex items-center gap-2">
-                    <Award className="w-5 h-5" />
-                    Your Stats
-                  </h3>
-                  {statsLoading ? (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="space-y-4">
-                        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-purple-100 text-sm">Total Orders</span>
-                            <ShoppingBag className="w-4 h-4 text-purple-200" />
-                          </div>
-                          <div className="text-2xl font-black">{orders.length}</div>
-                        </div>
-                        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-purple-100 text-sm">Money Spent</span>
-                            <DollarSign className="w-4 h-4 text-purple-200" />
-                          </div>
-                          <div className="text-2xl font-black">
-                            ₹{orders.reduce((sum, order) => sum + order.total, 0)}
-                          </div>
-                        </div>
-                        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-purple-100 text-sm">Member Status</span>
-                            <CheckCircle className="w-4 h-4 text-green-300" />
-                          </div>
-                          <div className="text-lg font-black">Active</div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => navigate('/orders')}
-                        className="w-full mt-6 bg-white text-purple-600 py-3 rounded-xl font-bold hover:bg-purple-50 transition-all"
-                      >
-                        View All Orders
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* Quick Actions */}
-              <div className="bg-white rounded-2xl shadow-xl p-6 border border-slate-200">
-                <h3 className="text-lg font-black text-slate-900 mb-4">Quick Actions</h3>
-                <div className="space-y-3">
-                  {isVendor ? (
-                    <>
-                      <button
-                        onClick={() => navigate('/vendor/dashboard')}
-                        className="w-full bg-blue-50 text-blue-700 py-3 rounded-xl font-semibold hover:bg-blue-100 transition-all flex items-center justify-center gap-2"
-                      >
-                        <Store className="w-4 h-4" />
-                        Manage Products
-                      </button>
-                      <button className="w-full bg-green-50 text-green-700 py-3 rounded-xl font-semibold hover:bg-green-100 transition-all flex items-center justify-center gap-2">
-                        <Package className="w-4 h-4" />
-                        View Orders
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => navigate('/')}
-                        className="w-full bg-blue-50 text-blue-700 py-3 rounded-xl font-semibold hover:bg-blue-100 transition-all flex items-center justify-center gap-2"
-                      >
-                        <Droplets className="w-4 h-4" />
-                        Browse Water
-                      </button>
-                      <button
-                        onClick={() => navigate('/orders')}
-                        className="w-full bg-green-50 text-green-700 py-3 rounded-xl font-semibold hover:bg-green-100 transition-all flex items-center justify-center gap-2"
-                      >
-                        <Package className="w-4 h-4" />
-                        My Orders
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
 
           {/* Recent Orders (User Only) */}
           {isUser && orders.length > 0 && (
@@ -621,7 +513,7 @@ export default function Profile() {
             </motion.div>
           )}
         </div>
-      </section>
-    </div>
+      </section >
+    </div >
   )
 }

@@ -50,16 +50,15 @@ export default function Header() {
 
     const navLinks = [
         { to: '/', label: 'Home', icon: Home, show: true },
-        { to: '/orders', label: 'My Orders', icon: Package, show: (user && profile?.role == 'user') },
-        { to: '/my-products', label: (profile?.role=='vendor'? 'My Products' : 'All Products' ), icon: Package, show: true },
+        { to: '/my-products', label: (profile?.role == 'vendor' ? 'My Products' : 'All Products'), icon: Package, show: true },
         { to: '/about', label: 'About', icon: Info, show: true },
         { to: '/contact', label: 'Contact', icon: Phone, show: true },
     ]
 
     return (
         <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled
-                ? 'bg-white/95 backdrop-blur-xl shadow-lg shadow-blue-500/5 border-b border-blue-100/50'
-                : 'bg-white/80 backdrop-blur-md border-b border-slate-200/50'
+            ? 'bg-white/95 backdrop-blur-xl shadow-lg shadow-blue-500/5 border-b border-blue-100/50'
+            : 'bg-white/80 backdrop-blur-md border-b border-slate-200/50'
             }`}>
             <div className="container mx-auto px-4 h-16 md:h-20 flex items-center justify-between">
                 {/* Logo */}
@@ -86,8 +85,8 @@ export default function Header() {
                                 key={link.to}
                                 to={link.to}
                                 className={`relative px-4 py-2 font-medium transition-all duration-300 group ${location.pathname === link.to
-                                        ? 'text-blue-600'
-                                        : 'text-slate-700 hover:text-blue-600'
+                                    ? 'text-blue-600'
+                                    : 'text-slate-700 hover:text-blue-600'
                                     }`}
                             >
                                 <span className="relative z-10 flex items-center gap-2">
@@ -291,8 +290,8 @@ export default function Header() {
                                         <Link
                                             to={link.to}
                                             className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${location.pathname === link.to
-                                                    ? 'bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-600'
-                                                    : 'text-slate-700 hover:bg-blue-50 hover:text-blue-600'
+                                                ? 'bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-600'
+                                                : 'text-slate-700 hover:bg-blue-50 hover:text-blue-600'
                                                 }`}
                                             onClick={() => setIsMenuOpen(false)}
                                         >
