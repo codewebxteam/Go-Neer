@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 // import { MOCK_USERS, MOCK_VENDORS, MOCK_ORDERS } from '../../data/mockData'
+import { Link } from 'react-router-dom'
 import { getAllUsers } from '../../services/userProfileService'
 import { getVendors } from '../../services/vendorService'
 import { getAllOrders } from '../../services/orderService'
-import { Users, Store, TrendingUp, ShoppingBag } from 'lucide-react'
+import { Users, Store, TrendingUp, ShoppingBag, Settings } from 'lucide-react'
 
 export default function AdminDashboard() {
     const { profile } = useAuth()
@@ -86,20 +87,31 @@ export default function AdminDashboard() {
             </div>
 
             <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-100 text-center">
-                <h2 className="text-xl font-bold text-slate-800 mb-4">Platform Management</h2>
+                <h2 className="text-xl font-bold text-slate-800 mb-6">Platform Management</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="p-4 border border-dashed border-slate-200 rounded-lg bg-slate-50">
-                        <h4 className="font-bold text-slate-700">User Management</h4>
-                        <p className="text-sm text-slate-400">View and manage all registered users.</p>
-                    </div>
-                    <div className="p-4 border border-dashed border-slate-200 rounded-lg bg-slate-50">
-                        <h4 className="font-bold text-slate-700">Vendor Approvals</h4>
-                        <p className="text-sm text-slate-400">Review pending vendor applications.</p>
-                    </div>
-                    <div className="p-4 border border-dashed border-slate-200 rounded-lg bg-slate-50">
-                        <h4 className="font-bold text-slate-700">System Settings</h4>
-                        <p className="text-sm text-slate-400">Configure app-wide parameters.</p>
-                    </div>
+                    <Link to="/admin/users" className="group p-6 border border-slate-200 rounded-xl hover:border-blue-500 hover:shadow-md transition-all bg-slate-50 hover:bg-white text-left">
+                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 mb-4 group-hover:scale-110 transition-transform">
+                            <Users className="w-6 h-6" />
+                        </div>
+                        <h4 className="font-bold text-slate-800 mb-1 group-hover:text-blue-600 transition-colors">User Management</h4>
+                        <p className="text-sm text-slate-500">View users, toggle active status, and manage profiles.</p>
+                    </Link>
+
+                    <Link to="/admin/vendors" className="group p-6 border border-slate-200 rounded-xl hover:border-emerald-500 hover:shadow-md transition-all bg-slate-50 hover:bg-white text-left">
+                        <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 mb-4 group-hover:scale-110 transition-transform">
+                            <Store className="w-6 h-6" />
+                        </div>
+                        <h4 className="font-bold text-slate-800 mb-1 group-hover:text-emerald-600 transition-colors">Vendor Management</h4>
+                        <p className="text-sm text-slate-500">Verify applications, manage listings, and enforce policies.</p>
+                    </Link>
+
+                    <Link to="/admin/settings" className="group p-6 border border-slate-200 rounded-xl hover:border-slate-500 hover:shadow-md transition-all bg-slate-50 hover:bg-white text-left">
+                        <div className="w-12 h-12 bg-slate-200 rounded-lg flex items-center justify-center text-slate-600 mb-4 group-hover:scale-110 transition-transform">
+                            <Settings className="w-6 h-6" />
+                        </div>
+                        <h4 className="font-bold text-slate-800 mb-1 group-hover:text-slate-600 transition-colors">System Settings</h4>
+                        <p className="text-sm text-slate-500">Configure global parameters, fees, and site access.</p>
+                    </Link>
                 </div>
             </div>
         </div>

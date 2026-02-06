@@ -23,6 +23,9 @@ const Cart = lazy(() => import('./pages/user/Cart'))
 const Checkout = lazy(() => import('./pages/user/Checkout'))
 const MyOrders = lazy(() => import('./pages/user/MyOrders'))
 const Products = lazy(() => import('./pages/user/Products'))
+const UserManagement = lazy(() => import('./pages/admin/UserManagement'))
+const VendorManagement = lazy(() => import('./pages/admin/VendorManagement'))
+const SystemSettings = lazy(() => import('./pages/admin/SystemSettings'))
 
 // Route Guards
 import ProtectedRoute from './components/common/ProtectedRoute'
@@ -107,6 +110,33 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['admin']}>
                     <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="admin/users"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <UserManagement />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="admin/vendors"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <VendorManagement />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="admin/settings"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <SystemSettings />
                   </ProtectedRoute>
                 }
               />
